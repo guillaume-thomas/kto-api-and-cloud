@@ -1,0 +1,17 @@
+{
+  "project_name": "My Project",
+  "repo_name": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+  "developer_redhat_username": "your-openshift-sandbox-name",
+  "quay_username": "your-quay-username",
+  "python_version": "3.13",
+  "project_description": "Kto Titanic Project",
+
+  "__prompts__": {
+    "project_name": "Enter the project name (should be your repository name)",
+    "developer_redhat_username": "Enter your Openshift sandbox name (to push images to your Quay.io account and configure OpenShift access to deploy mlflow). It should be the name of your namespace in OpenShift, without '-dev'.",
+    "quay_username": "Your username on Quay.io (to push container images)."
+  },
+  "_copy_without_render": [
+    ".gitignore"
+  ]
+}
