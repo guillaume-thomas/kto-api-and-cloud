@@ -1,10 +1,10 @@
 {
   "project_name": "My Project",
-  "repo_name": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+  "__repo_name": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
   "developer_redhat_username": "your-openshift-sandbox-name",
   "quay_username": "your-quay-username",
-  "python_version": "3.13",
-  "project_description": "Kto Titanic Project",
+  "__python_version": "3.13",
+  "__project_description": "Kto Titanic Project",
 
   "__prompts__": {
     "project_name": "Enter the project name (should be your repository name)",

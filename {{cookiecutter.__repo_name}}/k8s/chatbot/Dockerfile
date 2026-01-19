@@ -1,4 +1,4 @@
-FROM python:{{ cookiecutter.python_version }}-slim
+FROM python:{{ cookiecutter.__python_version }}-slim
 
 WORKDIR /app
 

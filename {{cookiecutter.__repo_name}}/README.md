@@ -1,8 +1,8 @@
-# {{cookiecutter.repo_name}}
+# {{cookiecutter.__repo_name}}
 
-{{ cookiecutter.project_description }}
+{{ cookiecutter.__project_description }}
 
-Generate with python version {{ cookiecutter.python_version }}.
+Generate with python version {{ cookiecutter.__python_version }}.
 
 uv is used to manage the python environment. So please, install uv if you don't have it already:
 

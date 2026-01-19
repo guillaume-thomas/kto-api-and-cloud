@@ -1,9 +1,9 @@
 [project]
-name = "{{ cookiecutter.repo_name }}"
+name = "{{ cookiecutter.__repo_name }}"
 version = "0.1.0"
-description = "{{ cookiecutter.project_description }}"
+description = "{{ cookiecutter.__project_description }}"
 readme = "README.md"
-requires-python = ">={{ cookiecutter.python_version }}"
+requires-python = ">={{ cookiecutter.__python_version }}"
 dependencies = [
     "fire>=0.7.1",
 ]

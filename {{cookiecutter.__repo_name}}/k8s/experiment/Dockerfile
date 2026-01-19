@@ -1,4 +1,4 @@
-FROM python:{{ cookiecutter.python_version }}-slim
+FROM python:{{ cookiecutter.__python_version }}-slim
 
 ARG MLFLOW_S3_ENDPOINT_URL
 ARG AWS_ACCESS_KEY_ID
