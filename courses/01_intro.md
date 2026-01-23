@@ -7,6 +7,14 @@ Clean code, Unit Test / TDD, CI/CD et automatisation), du MLOps avec comme illus
 ML simple qui sera entraîné en automatique dans le Cloud et déployé sous forme de Webservice sécurisé, toujours dans le 
 Cloud. 
 
+Nous irons un peu plus loin en abordant la gestion de la donnée (versioning, stockage, annotation) et le monitoring
+de nos modèles en production.
+
+Nous aborderons aussi des notions de conteneurisation avec Docker et d'orchestration avec Kubernetes, ainsi que des notions de DevOps
+avec Git, GitHub et les GitHub Actions.
+
+Enfin, nous verrons comment intégrer notre solution dans une application moderne, impliquant un chatbot, un LLM, des agents avec Langchain et du MCP.
+
 Toutes les précédentes notions seront explicitées et expliquées dans ce cours, ne vous inquiétez pas.
 
 L'idée n'est pas de faire de vous le ou la meilleure tech du monde, mais de vous montrer des notions et des bonnes pratiques 
@@ -31,7 +39,7 @@ Etant donné la densité et la teneur de ce cours de ce cours, merci d'observer 
 allons coder et expérimenter ensemble. Les retards seront pénalisants pour TOUT le monde, car ils nécessiteront de faire du
 rattrapage constant.</p>
 
-Je refuserai donc de prendre en charge TOUT retard non prévenu et non justifié.</p>
+Je refuserai donc de prendre en charge TOUT retard.</p>
 
 En ce qui concerne les absences, seules les raisons impérieuses seront acceptées. Le planning ayant été défini largement
 à l'avance, je n'accepterai pas l'excuse de réunions professionnelles prévues pendant le cours.
@@ -43,7 +51,7 @@ La notation est en deux parties :
 - une épreuve finale en fin de semestre, probablement un QCM
 
 La note de contrôle continu sera déterminée selon votre assiduité et votre sérieux à ce cours. A chaque étape du développement
-de notre projet, nous validerons ensemble votre avancée. Chaque jalon donnera lieu à l'attribution de points qui constituront 
+de notre projet, nous validerons ensemble votre avancée. Chaque jalon donnera lieu à l'attribution de points qui constitueront 
 votre note de CC finale. Il y aura, à certaines occasions, quelques points bonus sur des tâches d'amélioration à faire
 à la maison.
 
@@ -61,12 +69,6 @@ Voici une représentation simplifiée :
 
 ![MLops timeline](./00_materials/MLOps_Timeline.png)
 
-**Note importante :** 
-Attention, dans cette première prise en main du MlOps, nous n'aurons probablement pas l'opportunité de mettre en pratique
-la dernière partie de Mesure de la performance de notre système. Nous reviendrons sur la partie théorique de cette partie,
-mais nous manquerons de resources Cloud gratuites pour l'implémenter. C'est dommage, car c'est une composante **CRUCIALE**
-de la bonne mise en place d'une démarche MLOps dans le monde professionnel, mais il a fallu choisir les sujets. 
-Cette partie restera au mieux, théorique.
 
 ## Mise en place et présentation de l'environnement de travail
 
@@ -75,7 +77,6 @@ Pour les réalisations pratiques de ce cours, vous aurez besoin :
 - d'une adresse email valide (plutôt personnelle pour garder vos accès à la fin de votre cursus universitaire)
 - d'un compte GitHub
 - d'un compte Red Hat pour créer une Red Hat Developer Sandbox (un numéro de portable pour validation de compte par SMS sera nécessaire)
-- de [Bruno](https://www.usebruno.com/)
 
 ### Création d'un compte GitHub
 
@@ -96,23 +97,16 @@ Pour les réalisations pratiques de ce cours, vous aurez besoin :
 
 ![github_dashboard.png](00_materials/01_intro/github_dashboard.png)
 
-- Profitons-en pour forker le projet kto-mlops **en prenant garde de bien récupérer toutes les branches** !
-- Voici le [lien](https://github.com/guillaume-thomas/kto-mlops) du repository à cloner, cliquez dessus et cliquez sur Fork (plus de détail sur Git dans le [chapitre suivant](02_git.md))
-
-![fork_github_repository.png](00_materials/01_intro/fork_github_repository.png)
-
-- Renommez le nom du repository en kto-mlops-2023-2024 et **décochez Copy the main branch only (!!!IMPORTANT!!!)**, puis cliquez sur Create fork
-
-![create_new_fork.png](00_materials/01_intro/create_new_fork.png)
-
 ### Création de notre compte Red Hat et provisionnement de notre Red Hat Developer Sandbox
 
 - Connectez-vous sur le site [Red Hat Developer](https://developers.redhat.com/)
-- Cliquez sur Join Red Hat Developer
+- Cliquez sur Register for an account
 
-![join_reh_hat_dev.png](00_materials/01_intro/join_reh_hat_dev.png)
+![join_reh_hat_dev.png](img/004.png)
 
 - Replissez le formulaire d'inscription et cliquez sur Create my account
+- **POUR SIMPLIFIER LA SUITE, N'UTILISEZ PAS DE LOGIN AVEC DES CARACTÈRES SPÉCIAUX (POINTS, ACCENTS, TIRETS BAS, 
+ESPACES, ETC.). EN GROS, NE FAITES PAS COMME DANS L'EXEMPLE CI-DESSOUS :-P**
 
 ![red_hat_form.png](00_materials/01_intro/red_hat_form.png)
 
@@ -122,38 +116,37 @@ Pour les réalisations pratiques de ce cours, vous aurez besoin :
 
 - Vous revenez authentifié sur Red Hat Developer, nous allons maintenant créer notre Developer Sandbox
 - Vérifiez que vous êtes bien connecté.e
-- Cliquez sur le menu Developer Sandbox et Explore the free Developer Sandbox. 
+- Cliquez sur le menu Developer Sandbox et Try at no cost. 
 
-![explore_dev_sandbox.png](00_materials/01_intro/explore_dev_sandbox.png)
+![explore_dev_sandbox.png](img/005.png)
 
-- Cliquez sur Start your sandbox for free
+- Il n'est pas impossible que vous deviez vous reconnecter, ou si vous faites la manipulation plus tard
 
-![start_your_sandbox_for_free.png](00_materials/01_intro/start_your_sandbox_for_free.png)
+![006.png](img/006.png)
+![007.png](img/007.png)
 
 - Malheureusement, Red Hat nous demande des informations personnelles. Veuillez remplir ce formulaire
-- Vous devriez arriver sur votre console Red Hat. 
-- Cliquez sur Developer Sandbox et Get started 
 
-![sandbox_get_started.png](00_materials/01_intro/sandbox_get_started.png)
+![008.png](img/008.png)
 
-- La création de la Sandbox peut prendre un certain temps
+- Vous devriez arriver sur votre console Red Hat Developer.
 
-![sandobox_pending_approval.png](00_materials/01_intro/sandobox_pending_approval.png)
+![010.png](img/010.png)
 
-- C'est terminé, **partagez avec le professeur le lien vers votre repository forké par mail, mais aussi votre compte Red Hat (évaluation)**
+- C'est terminé, **partagez avec le professeur le lien vers compte github par mail (exemple ci-dessous), mais aussi votre compte Red Hat (évaluation)**
 
-### Installation de Bruno (sous Windows, mais doit fonctionner sur Mac et Linux)
+![009.png](img/009.png)
 
-- Rendez vous sur le site de [Bruno](https://www.usebruno.com/)
-- Cliquez sur Download
+Comme vous pouvez le constater, nous avons accès à une OpenShift complète dans le Cloud, avec 4 CPU, 8 Go de RAM et 35 Go de stockage.
+Ce sera largement suffisant pour nos besoins de formation. Vous disposez également de DevSpaces, des environnements de développement complets dans le Cloud.
+C'est parfait pour nous, c'est ce que nous allons utiliser pour développer notre projet.
 
-![download_bruno.png](00_materials/01_intro/download_bruno.png)
+Notez enfin que la durée de vie de cette sandbox est de 30 jours. Passé ce délai, vous devrez en recréer une nouvelle. 
+Soyez vigilant.es sur ce point et sauvegardez régulièrement vos avancées sur GitHub afin de ne pas perdre définitivement votre travail.
 
-- Télécharger votre installation préférée
-- Installez Bruno avec l'installeur
-- Validez son fonctionnement
+Pour l'instant, tant que vous ne cliquez pas sur Try it, votre sandbox n'est pas provisionnée et vous ne consommez pas de ressources.
+Les 30 jours commencent à être décomptés à partir du moment où vous cliquez également sur Try it.
 
-![apercu_bruno.png](00_materials/01_intro/apercu_bruno.png)
 
 ## Présentation de la cible à atteindre
 

@@ -1,5 +1,5 @@
 {
-  "project_name": "My Project",
+  "project_name": "kto-titanic",
   "__repo_name": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
   "developer_redhat_username": "your-openshift-sandbox-name",
   "quay_username": "your-quay-username",

@@ -7,20 +7,16 @@ On y retrouve l'intégralité d'un projet de ML temps réel, son encapsulation e
 Toutes les étapes élémentaires des pratiques de MLOps sont représentées.
 Ce projet ainsi que l'intégralité des supports de cours sont **open sources**.
 
-Ce cours a été construit avec Guillaume Chervet que je remercie ici au passage.
 
-C'est une version revue et corrigée de son itération précédente que vous trouverez [ici](https://github.com/guillaume-thomas/MLOpsPython-2022-2023)
-
-La partie pratique de ce cours ne nécessite pas d'installation particulière sur votre machine, à l'exception de [Bruno](https://www.usebruno.com/)
-pour tester des webservices. Nous utiliserons GitHub Codespaces pour développer, les GitHub Actions pour automatiser nos pipelines de CI/CD
+La partie pratique de ce cours ne nécessite pas d'installation particulière sur votre machine. Nous utiliserons RedHat Devspace pour développer, les GitHub Actions pour automatiser nos pipelines de CI/CD
 et Red Hat Developer Sandbox pour entraîner nos modèles et héberger nos Webservices. Nous utiliserons MLFlow pour tracer nos
-expériences et sauvegarder nos modèles. Tous ces éléments seront expliqués pendant ce cours et les protocoles d'inscriptions et 
-installations détaillés.
+expériences et sauvegarder nos modèles. Tous ces éléments seront expliqués pendant ce cours avec les protocoles d'inscriptions et 
+d'installations détaillés.
 
 
 ## Programme
 
-1. [Intro: MLOPs](./courses/01_intro.md)
+1. [Introduction](./courses/01_intro.md)
     - Présentation du cours
     - Tour de table
     - Présentation de la structure des cours
@@ -47,17 +43,16 @@ installations détaillés.
     - Les points d'attention sur le Licensing
 3. [Python, Unit Test & Clean code](./courses/03_python_unit_tests_clean_code)
     - Bases de Python
+    - Présentation d'uv
     - Les tests unitaires et TDD
     - Clean code, les principes fondamentaux
 4. [Scoping, Data préparation et Annotations](./courses/04_scoping_data_prep_label)
-    - Présentation du projet
+    - Présentation du projet : Survivants du titanic
     - Présentation du dataset
-    - Préparation de la donnée
-    - Présentation et installation d'ecotag
-    - Annotations des images
+    - Petites précisions sur l'annotation des données non structurées
+    - Installation de kto-mlflow
     - Versioning de la donnée et stockage
 5. [Train dans un notebook](./courses/05_train_in_a_notebook.md)
-    - Installation et présentation de JupyterLab
     - Training de notre modèle dans un Notebook
     - Les limites de la démarche
     - Proposition d'alternative à notre Notebook
@@ -65,13 +60,12 @@ installations détaillés.
     - Présentation du cloud et ses avantages
     - Présentation des solutions du marché
         - Databricks / MLFlow
-        - OpenShift DataScience
+        - OpenShift AI
         - Azure ML
     - Présentation de kto-mlflow
     - Training avec MlFlow
 7. [Continuous Integration](./courses/07_ci.md)
     - A quoi ça sert ?
-    - Publier un package pour commencer
     - Mise en place de nos github actions
     - Lancer une expérimentation de manière continue
 8. [Création d'API avec FastAPI](./courses/08_fastapi_and_webservices.md)
@@ -96,7 +90,12 @@ installations détaillés.
         - FluxCD
     - Mise en place simple pour notre projet
 12. [Les tests d'intégration](./courses/12_integration_tests)
-13. [Mesurer la performance de notre solution (bonus)](./courses/13_measure_performance.md)
+13. [Monitorer notre solution avec OTEL](./courses/13_measure_performance.md)
+14. Mettre en place un chatbot avec LLM et LangChain
+    - Présentation des LLM
+    - Présentation de LangChain
+    - Présentation du protocole MCP
+    - Mise en place d'un chatbot avec LangChain et notre modèle de prédiction des survivants du Titanic
 
 ## En cas de pépins
 

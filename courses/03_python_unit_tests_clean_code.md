@@ -60,6 +60,14 @@ Faites le test avec le professeur !
 - Fermez le terminal et ouvrez-en un nouveau
 - Essayez d'afficher MA_JOLIE_VARIABLE
 
+### Les scripts bash (.sh)
+
+Une manière simple de garder des variables d'environnement ou des commandes à exécuter à chaque ouverture de terminal est
+de créer un script bash (fichier avec l'extension .sh) et de l'exécuter à chaque ouverture de terminal. Ou même, à chaque
+fois que vous en avez besoin.
+
+Vous trouverez dans votre projet, un répertoire scripts où vous pourrez créer vos scripts bash.
+
 ### Les commandes Python
 
 Les commandes par défaut pour Python sont :
@@ -152,6 +160,45 @@ python [venv](https://docs.python.org/fr/3/library/venv.html).
 Encore une fois, le risque sera limité pour ce cours, car nous travaillerons dans un environnement Codespaces dédié à notre projet. La version de Python
 est fixée et toutes les dépendances installées pour notre interpréteur seront dédiées au projet.
 
+### UV 
+
+Pour ce cours, est afin de simplifier la gestion des dépendances, et utiliser des outils plus modernes. Nous allons utiliser uv.
+UV est un gestionnaire de dépendances et d'environnements pour les projets Python. Il permet de créer des environnements virtuels isolés pour chaque projet,
+gérant ainsi les dépendances spécifiques à chaque projet sans interférer avec les autres projets ou l'installation globale de Python.
+
+Il peut également gérer les versions de Python, permettant aux développeurs de spécifier la version de Python à utiliser pour chaque projet.
+
+Pour information, les dépendances de notre projet sont listées dans le fichier `pyproject.toml` à la racine de notre projet.
+
+Le fichier existe déjà et n'est pas complet. Nous allons néanmoins déjà créer un environnement uv pour notre projet. 
+
+
+### UV Evaluation
+
+Pour ce faire, dans le terminal de votre Devspace, exécutez la commande suivante : 
+```bash
+uv sync --all-groups
+```
+
+![049.png](img/049.png)
+
+Comme vous pouvez le constater, uv a créé un environnement virtuel pour notre projet et a installé toutes les dépendances
+listées dans le fichier `pyproject.toml`. Il a également créé un fichier `uv.lock`, qui liste toutes les dépendances installées, avec leurs versions exactes.
+Ce fichier est très important, car il permet de garantir que tous les développeurs travaillant sur le projet utilisent les mêmes versions de dépendances,
+ce qui évite les conflits de versions et les erreurs d'exécution.
+Notez enfin qu'uv a utilsé la version de python spécifié dans le fichier .python-version (ici la 3.13).
+
+![050.png](img/050.png)
+
+Pour activer l'environnement uv, exécutez la commande suivante : 
+```bash
+source .venv/bin/activate
+```
+
+![051.png](img/051.png)
+
+**Evaluation : commitez et poussez votre fichier `uv.lock` sur votre branche personnelle.**
+
 ### Notre premier script
 
 Il est bien entendu que nous n'allons pas coder l'intégralité de notre projet en ligne de commande directement dans 
@@ -161,11 +208,9 @@ d'utiliser le contenu d'un script (notamment ses fonctions) dans un autre avec l
 
 Créons notre premier script :
 - Vérifiez que vous êtes bien dans votre branche personnelle créée dans le module précédent sur [Git](02_git.md)
-- Créer un nouveau fichier `mon_premier_script.py` à la racine de votre projet à l'aide du VSCode inclut avec Codespaces
+- Créer un nouveau fichier `mon_premier_script.py` dans le répertoire exercices de votre projet
 
-![creation_script.png](00_materials/03_python_unit_tests_clean_code/creation_script.png)
-
-![mon_premier_script.png](00_materials/03_python_unit_tests_clean_code/mon_premier_script.png)
+![107.png](img/107.png)
 
 - Ajoutez une premier ligne à votre script : 
 ```python
@@ -174,12 +219,64 @@ print(message)
 ```
 - Exécutez votre script avec la commande `python`
 ```bash
-python mon_premier_script.py 
+python ./exercices/mon_premier_script.py 
 ```
+
+![108.png](img/108.png)
+![109.png](img/109.png)
 
 Bravo !!! Vous avez exécuté le code contenu dans votre script python !
 
-Dans ce script, vous avez créé une variable `message` de type chaîne de caractères (ou `str`).
+### Aparté sur l'exécution avec uv et l'environnement uv
+
+Notez que vous pouvez également utiliser uv pour exécuter votre script, ce qui garantit que l'environnement virtuel
+créé par uv est bien utilisé pour exécuter votre code. Pour ce faire, utilisez la commande suivante : 
+```bash
+uv run python ./exercices/mon_premier_script.py
+```
+
+![110.png](img/110.png)
+
+Notez également que, étant donné que vous avez activé l'environnement uv dans votre terminal, vous pouvez également exécuter
+votre script directement avec la commande `python`, comme nous l'avons fait précédemment.
+
+Pour vous le prouvez, affichez la version de python utilisé avec la comamnde suivante : 
+```bash
+python --version
+```
+
+Notez que vous êtes en python 3.13, comme spécifié dans le fichier `.python-version` à la racine de votre projet. Et donc
+vous utilisez bien l'interpréteur python de votre environnement uv.
+
+![111.png](img/111.png)
+
+Maintenant, désactivez votre environnement uv avec la commande `deactivate` : 
+```bash
+deactivate
+```
+
+![112.png](img/112.png)
+
+Recommencez la commande `python --version` : 
+```bash
+python --version
+``` 
+
+Notez que vous êtes désormais en python 3.11, la version par défaut de l'interpréteur installé dans votre Devspace.
+
+![113.png](img/113.png)
+
+Reactivez votre environnement uv avec la commande `source .venv/bin/activate`. Notez que dans le terminal, le nom de votre environnement
+apparaît entre parenthèses, avant le prompt.
+```bash
+source .venv/bin/activate
+```
+
+![114.png](img/114.png)
+
+### Les types de données en Python
+
+Retour à notre premier script. Dans celui-ci, vous avez créé une variable `message` de type chaîne de caractères (ou `str`).
 
 Python est un langage de programmation fortement typé, ce qui signifie que chaque variable ou objet en Python possède 
 un type de données. Voici quelques-uns des types de données les plus courants en Python :
@@ -209,8 +306,10 @@ print(type(je_change_de_type))
 ```
 Exécutez votre script avec :
 ```bash
-python mon_premier_script.py 
+python ./exercices/mon_premier_script.py 
 ```
+
+![115.png](img/115.png)
 
 ### Les instructions basiques de Python
 
@@ -239,6 +338,8 @@ for prenom in prenoms:
         print(prenom + " est un prénom avec un nombre de lettres inférieur ou égal à 7")
 print("Nombre de prénoms dont le nombre de lettres est supérieur à 7 : " + str(more_than_seven))
 ```
+
+![116.png](img/116.png)
 
 Commentons ce code ensemble.
 
@@ -269,12 +370,15 @@ print(saluer("Alice"))  # Affiche : Bonjour Alice
 Dans cet exemple, `saluer` est une fonction qui prend un paramètre `nom` et renvoie une chaîne de caractères qui est 
 une salutation pour `nom`. 
 
+![117.png](img/117.png)
+
 Sources : 
 - Fonctions en Python — Cours Python. https://courspython.com/fonctions.html.
 - Qu'est-ce qu'une fonction dans python. https://www.nicelydev.com/python/fonction.
 - 6- Les fonctions en langage Python – Très Facile. https://www.tresfacile.net/les-fonctions-en-langage-python/.
 
-Modifions ensemble le code qui affiche les prénoms en fonction de leur nombre de lettres, à l'aide des fonctions:
+Modifions ensemble le code qui affiche les prénoms en fonction de leur nombre de lettres, à l'aide des fonctions.
+Créez un nouveau script `exercices/mon_premier_script_avec_fonction.py` et ajoutez-y le code suivant :
 
 ```python
 """
@@ -295,6 +399,8 @@ print("Nombre de prénoms dont le nombre de lettres est supérieur à 7 : " + st
 ```
 
 Commentons ce code ensemble.
+
+![118.png](img/118.png)
 
 ### L'orienté objet : class VS dict
 
@@ -376,6 +482,15 @@ Enfin, terminons avec la pratique du Test Driven Development (TDD). Son principe
 votre solution. Cela garantit que le code produit est fonctionnel et répond au besoin initial. Nous ne pratiquerons pas
 forcément de TDD durant ce cours, mais son utilisation est vivement recommandé. 
 
+![119.png](img/119.png)
+
+### Python Evaluation
+
+Commitez et poussez l'intégralité de votre code sur votre branche main.
+
+![120.png](img/120.png)
+![121.png](img/121.png)
+
 ## Clean code, les principes fondamentaux
 
 Voici quelques principes de clean code simples:
@@ -403,3 +518,6 @@ modification.**
 **N'OUBLIEZ PAS** : Exécutez votre test unitaire pour bien vous assurer que votre refactoring ou clean code, n'ait
 pas compromis le bon fonctionnement de votre fonction. Cela fera partie de la notation. Le test unitaire **DOIT TOUJOURS**
 être passant (statut OK).
+
+Créez un nouveau commit avec votre code refactoré. Faites en sorte que le commit soit clair et explicite sur les modifications apportées.
+Poussez votre commit sur votre branche main.
