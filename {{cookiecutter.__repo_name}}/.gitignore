@@ -166,4 +166,4 @@ cython_debug/
 # ruff
 .ruff_cache
 
-/scripts/
+scripts/
