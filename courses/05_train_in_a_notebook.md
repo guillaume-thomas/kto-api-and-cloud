@@ -3,126 +3,59 @@
 Dans cette petite partie, nous allons mettre en place l'entraînement de notre modèle dans un notebook et discuterons 
 de sa pertinence.
 
-Avant de commencer, afin que tout le monde parte du même point, vérifiez que vous n'avez aucune modification en 
-cours sur votre working directory avec `git status`.
-Si c'est le cas, vérifiez que vous avez bien sauvegardé votre travail lors de l'étape précédente pour ne pas perdre 
-votre travail.
-Sollicitez le professeur, car il est possible que votre contrôle continue en soit affecté. 
+Avant de commencer, vérifiez que votre environnement de travail est bien opérationnel en 
+utilisant [Dailyclean](./04_scoping_data_prep_label.md#présentation-de-dailyclean-et-comment-démarrer-kto-mlflow). 
 
-Sinon, annulez toutes vos modifications avec `git reset --hard HEAD`. Supprimez potentiellement les fichiers
-non indexés.
-Changez maintenant de branche avec `git switch step02`.
-Créez désormais une branche avec votre nom : `git switch -c votrenom/step02`
-
-## Installation et présentation de JupyterLab
-
-JupyterLab est une interface web graphique pour l'environnement de développement de Jupyter, 
-une application open-source permettant de créer et partager des documents interactifs (notebook) qui contiennent du
-code et du texte. JupyterLab est compatible avec tous les langages de programmation de 
-Jupyter, notamment Python, R, Julia et bien d'autres encore.
-
-Avec JupyterLab, il est facile de créer des documents interactifs pour le ML, le traitement, la visualisation et la
-modélisation de données.
-
-Pour l'installer dans votre Codespaces, utilisez la commande suivante dans votre Terminal : 
-
-```bash
-pip install jupyterlab
-```
-
-Pour lancer JupyterLab, utilisez la commande suivante : 
-```bash
-jupyter lab
-```
-
-Il n'est pas impossible que le terminal "boggue" sur votre Codespace. Pour débloquer la situation, voici comment faire : 
-- Constatez le problème
-
-![constater_le_soucis.png](00_materials/05_train_in_a_notebook/constater_le_soucis.png)
-
-- Cliquez sur Recharger cela va redémarrer Codespaces
-- Constatez que cela fonctionne
-
-![ca_marche.png](00_materials/05_train_in_a_notebook/ca_marche.png)
-
-Maintenant, ouvrez votre JupyterLab :
-- CTRL+clic sur le lien indiqué dans la console : 
-```
-Or copy and paste one of these URLs:
-        http://localhost:8888/lab?token=blabla
-        http://127.0.0.1:8888/lab?token=blabla
-```
-- Cela ouvre la page d'authentification
-- Copiez et collez le jeton présent dans les URLs ci-dessus, après `token=`, ici : blabla, dans le champ Password or token
-
-![authent.png](00_materials/05_train_in_a_notebook/authent.png)
-
-- Cliquez sur Log in
-- C'est prêt !
-
-![jupyter_dashboard.png](00_materials/05_train_in_a_notebook/jupyter_dashboard.png)
+Lancez également votre Devspace s'il est éteint. Vous trouverez comment faire dans les [parties précédentes](./04_scoping_data_prep_label.md#installation-de-kto-mlflow-et-présentation-de-minio).
 
 ## Training de notre modèle dans un Notebook
 
-Commençons maintenant à expérimenter l'entrainement d'un modèle à partir d'un nouveau notebook. Créons le répertoire
-``/cats_dogs_other/train``. Il faut pour cela naviguer dans l'explorateur à gauche et cliquer sur le boutono suivant :
-
-![create_notebook.png](00_materials/05_train_in_a_notebook/create_notebook.png)
-
-Renommez le `train.ipynb` au lieu de Untitled. Pour cela, faites un clic droit et sélectionnez Rename :
-
-![rename_notebook.png](00_materials/05_train_in_a_notebook/rename_notebook.png)
+Commençons maintenant à expérimenter l'entrainement d'un modèle à partir d'un notebook. Dans le répertoire `notebooks`, ouvrez
+le notebook `training-titanic-exploration.ipynb`. 
 
 Désormais, vous êtes prêt.e à expérimenter ! 
-
-Avant toute chose, démarrez minio seulement dans kto-mlflow. Vous n'êtes pas obligé de tout démarrer avec Dailyclean :
-- Connectez-vous sur votre OpenShift 
-- Rendez-vous dans Workloads -> Deployments 
-- Sélectionnez minio
-
-![start_minio.png](00_materials/05_train_in_a_notebook/start_minio.png)
-
-- Cliquez sur la petite flèche qui va vers le haut, à droite du cercle
-
-![scale_minio.png](00_materials/05_train_in_a_notebook/scale_minio.png)
-
-- Copiez / collez l'url vers l'API de minio en vous rendant sur Networking -> Routes, trouvez la ligne minio-api et cliquez
-sur le logo Copier à droite de l'url dans la colonne Location et mettez là de côté (dans voter notebook, si ça vous chante).
-
-![copy_minio_api_url.png](00_materials/05_train_in_a_notebook/copy_minio_api_url.png)
 
 Nous allons d'abord commencer par structurer un peu notre pensée. Normalement, un notebook peut servir à expérimenter
 des boûts de code sans structure particulière. Pour les besoins de la clarté de ce cours, nous allons tout de même cadrer un
 peu les choses.
 
-Nous allons diviser notre notebook en 5 parties distinctes. 
-- Donc commençons par créer 5 cellules dans notre notebook avec le bouton `+` en haut à gauche 
+Nous allons diviser notre notebook en 4 parties distinctes. 
+- Supprimez la première cellule de votre notebook 
 
-![insert_cell_plus.png](00_materials/05_train_in_a_notebook/insert_cell_plus.png)
+![153.png](img/153.png)
 
-- Nous pouvons changer le type de contenu de nos cellules. Par défaut, il s'agit de code. Mais nous pouvons également 
-y mettre du Markdown. Changeons donc le type de nos 5 cellulle en Markdown avec la liste déroulante en haut à droite
+- Donc commençons par créer 4 cellules Markdown dans notre notebook avec le bouton `+ Markdown` en haut à gauche 
 
-![select_cell_type.png](00_materials/05_train_in_a_notebook/select_cell_type.png)
+![154.png](img/154.png)
+![155.png](img/155.png)
 
-- Mettons maintenant dans chaque cellule, les 5 titres suivants :
+- Mettons maintenant dans chaque cellule, les 4 titres suivants :
 ```markdown
 # Create s3 client and download data from minio
 # Random split train / test
 # Train ML model
 # Evaluate ML model
 ```
-- Maintenant, créez une cellule en dessous de chaque titre que nous venons de créer avec le bouton suivant : 
 
-![insert_cell_under.png](00_materials/05_train_in_a_notebook/insert_cell_under.png)
+![157.png](img/157.png)
 
-- Pour avoir une belle mise en forme, exécutez chacune des cellules titre avec ce bouton :
+- Sous une des cellules titres, nous allons créer une cellule de code avec le bouton `...` à droite de la cellule,
+  puis `Insert Cell` et enfin `Insert Code Cell Below`
 
-![run_cell_and_advance.png](00_materials/05_train_in_a_notebook/run_cell_and_advance.png)
+![156.png](img/156.png)
+![157.png](img/157.png)
+
+- Précisez maintenant dans cette cellule code, que le type de code est `Python` avec le bouton qui indique `plain text` à gauche de chaque cellule
+
+![158.png](img/158.png)
+![159.png](img/159.png)
+![160.png](img/160.png)
+
+- Répétez cette opération pour chaque titre
 
 - Vous devriez maintenant avoir quelque chose qui ressemble à ça : 
 
-![steps_define_in_notebook.png](00_materials/05_train_in_a_notebook/steps_define_in_notebook.png)
+![161.png](img/161.png)
 
 Comme vous pouvez le voir dans l'illustration ci-dessus, vous pouvez ouvrir et fermer chaque partie avec la flèche à gauche
 de votre cellule titre. C'est très pratique pour y voir plus clair pendant vos expérimentations ! Maintenant, développons

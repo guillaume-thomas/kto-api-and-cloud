@@ -50,8 +50,9 @@ d'installations détaillés.
     - Présentation du projet : Survivants du titanic
     - Présentation du dataset
     - Petites précisions sur l'annotation des données non structurées
-    - Installation de kto-mlflow
     - Versioning de la donnée et stockage
+    - Installation de kto-mlflow et présentation de minio
+    - Présentation de Dailyclean et comment démarrer kto-mlflow
 5. [Train dans un notebook](./courses/05_train_in_a_notebook.md)
     - Training de notre modèle dans un Notebook
     - Les limites de la démarche

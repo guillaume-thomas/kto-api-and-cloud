@@ -7,31 +7,17 @@ Pour rappel, voici une vision simplifiée des différentes étapes à observer :
 
 ![MLOps_Timeline.png](00_materials/MLOps_Timeline.png)
 
-Dans ce chapitre, nous allons travailler sur la partie Scoping et Data.
-
-Pour bien démarrer, vérifiez que vous n'avez aucune modification en cours sur votre working directory avec `git status`.
-Si c'est le cas, annulez toutes vos modifications avec `git reset --hard HEAD`. Supprimez potentiellement les fichiers
-non indexés.
-Changez maintenant de branche avec `git switch step01`.
-Créez désormais une branche avec votre nom : `git switch -c votrenom/step01`
-
-![init_de_l_etape.png](00_materials/04_scoping_data_prep_label/init_de_l_etape.png)
-
-Prenez maintenant connaissance de la structure du projet avec le professeur
-
 ## Présentation du projet
 
-Nous allons créer un Webservice de classification de Chiens et de Chats. Ce service doit déterminer de manière précise
-si les images données en entrée représentent des chats, des chiens ou autre chose.
+Nous allons créer un Webservice de classification permettant de déterminer si un passager du Titanic a survécu.
 Cette classification doit se faire en temps réel ! Le client n'aime pas les traitements batch qu'il juge d'un autre temps.
-Et puis, si l'on est capable de traiter un flux d'image en temps réel, nous serons parfaitement capables de le faire
+Et puis, si l'on est capable de traiter un flux de passagers en temps réel, nous serons parfaitement capables de le faire
 en batch ;-)
 
 ## Présentation du dataset
 
-C'est là que ça devient particulier ... le dataset fourni par le client est sous forme de fichiers PDF. Ces fichiers
-comportent plusieurs pages avec une image par page représentant : un chat, un chien, ou autre chose. Autre particularité,
-S'il y a plusieurs images, la première et la dernière sont les mêmes.
+Pour entrainer notre modèle, nous utiliserons des données tabulaires (csv). Elles comportent des informations sur les passagers
+(titre, âge, sexe, classe, tarif payé, nombre de frères et sœurs à bord, nombre de parents à bord, port d'embarquement ...).
 
 Exceptionnellement, le dataset est fourni et est stocké dans le repository git de notre projet. 
 Ce n'est pas une bonne pratique, mais pour simplifier la prise en main de ce cours, nous avons fait ce choix.
@@ -42,193 +28,16 @@ Analysez avec le professeur ce dataset.
 
 ## Préparation de la donnée
 
-Nous n'allons pas avoir le choix, il va falloir préparer la donnée. Il ne faut des images pour entraîner notre modèle
-et non pas des pdfs. Il va falloir développer un script d'extraction pour récupérer les images de chaque page. 
+La donnée brute à notre disposition est déjà propre et prête à l'emploi. Nous ferons les étapes de splitting et analyse
+des données directement dans notre pipeline de training. Nous ferons simple pour ce projet.
 
-Parce que ce projet reste un projet de cours, nous allons utiliser librement la librairie pymupdf.
+## Petites précisions sur l'annotation des données non structurées
 
-**N'OUBLIEZ PAS** : MuPdf ne peut être utilisé tel quel dans un projet commercialisé.
+Quand nous farons du Machine Learning supervisé, nous avons besoin d'annotations. Ces annotations sont la "source de vérité" que
+notre modèle va apprendre à reproduire. Il est donc primordial que ces annotations soient de qualité.
 
-Pour ce faire, nous allons ajouter la librairie dans le fichier `label/requirements.txt` : 
-```
-pymupdf==1.23.8
-```
-
-En Python, le fichier `requirements.txt` est utilisé pour spécifier les dépendances du projet Python.
-Le fichier `requirements.txt` contient donc une liste de ces packages tierces, avec leur version spécifique.
-
-Cela permet aux autres personnes qui souhaitent utiliser ou contribuer à votre projet de facilement installer toutes
-les dépendances en une seule fois, en exécutant simplement la commande `pip install -r requirements.txt`.
-C'est une pratique courante et recommandée pour tous les projets Python.
-
-Lancez l'installation de la librairie avec la commande :
-```bash
-pip install -r ./cats_dogs_other/label/requirements.txt
-```
-
-Créez maintenant un script `extraction.py` dans le repertoire `cats_dogs_other/label`
-
-![create_extraction.png](00_materials/04_scoping_data_prep_label/create_extraction.png)
-
-Et dans ce script, copiez / collez le code suivant : 
-
-```python
-from dataclasses import dataclass
-from io import BytesIO
-from pathlib import Path
-
-import fitz
-from fitz import Pixmap
-
-
-def convert_pixmap_to_rgb(pixmap) -> Pixmap:
-    """Convert to rgb in order to write on png"""
-    # check if it is already on rgb
-    if pixmap.n < 4:
-        return pixmap
-    else:
-        return fitz.Pixmap(fitz.csRGB, pixmap)
-
-
-@dataclass
-class ExtractImagesResult:
-    number_files_input: int
-    number_images_output: int
-
-
-def extract_images(pdfs_directory_path: str, images_directory_path: str) -> ExtractImagesResult:
-    pdfs = [p for p in Path(pdfs_directory_path).iterdir() if p.is_file()]
-    Path(images_directory_path).mkdir(parents=True, exist_ok=True)
-    number_images_output = 0
-    for pdf_path in pdfs:
-        with open(pdf_path, "rb") as pdf_stream:
-            pdf_bytes = pdf_stream.read()
-        with fitz.open(stream=pdf_bytes, filetype="pdf") as document:
-            number_pages = len(document) - 1
-            for index in range(number_pages):
-                images = document.get_page_images(index)
-                for index_image, image in enumerate(images):
-                    xref = image[0]
-                    image_pix = fitz.Pixmap(document, xref)
-                    image_bytes_io = BytesIO(convert_pixmap_to_rgb(image_pix).tobytes())
-                    filename = "{0}_page{1}_index{2}.png".format(pdf_path.stem, str(index), str(index_image))
-                    number_images_output = number_images_output + 1
-                    with open(Path(images_directory_path) / filename, "wb") as file_stream:
-                        file_stream.write(image_bytes_io.getbuffer())
-
-    return ExtractImagesResult(number_files_input=len(pdfs), number_images_output=number_images_output)
-```
-
-Commentons ce code ensemble. Prenons le temps de l'améliorer également. Il pose plusieurs problèmes. Je vous propose de d'abord, 
-faire un test unitaire et identifier les problèmes, proposer une résolution et nettoyer ce code. Cette partie est facultative. 
-Ce code fonctionne à peu près tel quel.
-
-Voici une proposition de test unitaire. Dans le répertoire `label/tests`, créez un script `test_extraction.py` dans lequel 
-vous pouvez mettre le code suivant : 
-```python
-import shutil
-import unittest
-from pathlib import Path
-
-from cats_dogs_other.label.extraction import extract_images
-
-BASE_PATH = Path(__file__).resolve().parent
-output_directory = BASE_PATH / "output"
-input_directory = BASE_PATH / "input"
-
-
-class TestExtraction(unittest.TestCase):
-
-    def test_pdfs_images_should_be_extracted(self):
-        if output_directory.is_dir():
-            shutil.rmtree(str(output_directory))
-        result = extract_images(str(input_directory), str(output_directory))
-        expected_number_files_input = 3
-        self.assertEqual(expected_number_files_input, result.number_files_input)
-        expected_number_images_output = 4
-        self.assertEqual(expected_number_images_output, result.number_images_output)
-        shutil.rmtree(str(output_directory))
-
-
-if __name__ == "__main__":
-    unittest.main()
-
-```
-
-Maintenant, exécutez ce test avec la commande : 
-```bash
-python -m unittest cats_dogs_other.label.tests.test_extraction
-```
-
-Que constatez-vous ? Comment rétablir la situation ?
-
-
-Nous avons maintenant, une mini-librairie qui va nous permettre d'extraire toutes les images d'un répertoire et de
-les copier dans un autre en png.
-
-Mettons-la maintenant en œuvre ! Pour ce faire, nous allons l'utiliser dans le script déjà existant `run.py`.
-Nous discuterons de ce script un peu plus tard.
-
-Pour l'instant, il ne contient que ce code : 
-
-```python
-
-if __name__ == "__main__":
-    # Faire le code ici
-    print('')
-```
-
-A la place du code déjà présent, inséré le code suivant :
-
-```python
-
-if __name__ == "__main__":
-    # Préparation du dataset
-    raw_folder = "cats_dogs_other/label/dataset/_raw"
-    postprocess_folder = "cats_dogs_other/label/dataset/extract"
-    if not os.path.isdir(postprocess_folder) or not os.listdir(postprocess_folder):
-        res = extract_images(raw_folder, postprocess_folder)
-        print("files input = " + str(res.number_files_input))
-        print("files output = " + str(res.number_images_output))
-```
-
-Comme vous pouvez le voir, votre éditeur vous prévient que quelque chose ne va pas. En effet, `os` et `extract_images` sont 
-soulignés : 
-
-![non_defini.png](00_materials/04_scoping_data_prep_label/non_defini.png)
-
-Cela veut dire qu'il manque des imports dans votre script : os et extract_images. Corrigez ce soucis en ajoutant les lignes
-suivantes : 
-```python
-import os
-from extraction import extract_images
-
-
-if __name__ == "__main__":
-    # Préparation du dataset
-```
-
-Notez que votre IDE peut vous aider à faire ces imports. Faites le test avec le professeur !
-
-Commentons rapidement le code présent dans `run.py`.
-
-Exécutons maintenant le code une première fois avec la commande suivante : 
-```bash
-python cats_dogs_other/label/run.py
-```
-
-Comme vous pouvez le voir, nous avions 40 pdfs en entrée et avons extrait 192 images png.
-
-![extract_done.png](00_materials/04_scoping_data_prep_label/extract_done.png)
-
-Notez que le traitement ne se fera qu'une seule fois, car nous avons ajouté une condition sur la présence ou non de fichier
-dans le fichier de destination `label/extract`, désormais non vide : 
-
-![extract_folder.png](00_materials/04_scoping_data_prep_label/extract_folder.png)
-
-Maintenant, annotons ces images ! Pour ce faire, nous allons utiliser ecotag.
-
-## Présentation et installation d'ecotag
+Dans le cadre de données non structurées (images, vidéos, sons, textes), l'annotation peut s'avérer être une tâche longue et fastidieuse.
+Mais importante. Nous avons déjà vu que la qualité de la donnée était primordiale. La qualité des annotations l'est tout autant.
 
 Ecotag est une solution d'annotation sécurisée et open source, proposée initialement par Axa France. 
 Nous allons l'utiliser ici pour
@@ -263,337 +72,9 @@ apporter à l'outil. N'hésitez pas à vous lancer si le cœur vous en dit :)
 
 Vous trouverez le code source d'ecotag [ici](https://github.com/AxaFrance/ecotag)
 
-Allez, c'est parti ! Soyez bien attentif à ce qui va suivre ;)
+## Annotations des images (démonstration, à ne pas faire en pratique)
 
-Il n'est pas utile de retenir cette partie.
-
-Pour commencer, nous allons cloner le repository d'ecotag, car nous allons avoir besoin de builder le code source.
-Dans votre terminal, jouez les commandes suivantes : 
-```bash
-cd ./cats_dogs_other/label
-git clone https://github.com/AxaGuilDEv/ecotag.git
-cd ./ecotag
-```
-
-Désormais, vous avez un répertoire ecotag affiché en gris. Cela veut dire qu'il est ignoré par git et ne sera jamais
-ajouté à l'index depuis votre working directory (regardez dans le fichier `.gitignore`) :
-
-![ecotag_cloned.png](00_materials/04_scoping_data_prep_label/ecotag_cloned.png)
-
-Maintenant, notez bien l'url de votre codespace ! Nous allons en avoir besoin pour le mettre dans le code d'ecotag en dur (snif).
-Exemple ici : https://psychic-enigma-q65jwpvv4673j49.github.dev/
-
-![url_codespace.png](00_materials/04_scoping_data_prep_label/url_codespace.png)
-
-Ajoutez dans votre url, juste avant `.github.dev/` la chaîne suivante : `-5010.app`. Vous obtiendrez donc l'url définitive :
-https://psychic-enigma-q65jwpvv4673j49-5010.app.github.dev/
-
-Notez bien cette url. Attention, il faut bien utiliser les informations de **VOTRE** codespace, sinon cela ne fonctionnera
-pas.
-
-Maintenant, continuons. Dans le ficher `ecotag/deocker-compose.yml`, retirez les commentaires lignes 19, 20 et 21 et 
-supprimez la ligne 18. Vous devez avoir votre yaml ressemblant à ça :
-```yaml
-ecotag:
-  build:
-    context: .
-    dockerfile: ./Dockerfile
-  environment:
-    ASPNETCORE_ENVIRONMENT: Docker
-```
-Exemple imagé avant : 
-
-![compose_avant.png](00_materials/04_scoping_data_prep_label/compose_avant.png)
-
-Exemple imagé après :
-
-![compose_apres.png](00_materials/04_scoping_data_prep_label/compose_apres.png)
-
-Remplacer http://localhost:5010/ par votre url de codespace (https://psychic-enigma-q65jwpvv4673j49-5010.app.github.dev/), dans le fichier 
-`ecotag/src/Ecotag/ClientApp/public/environment.docker.json`
-Exemple :
-```json
-{
-  "apiUrl": "https://psychic-enigma-q65jwpvv4673j49-5010.app.github.dev/api/server/{path}",
-  "baseUrl": "",
-  "oidc": {
-    "mode": "Default",
-    "configuration": {
-      "client_id": "interactive.public",
-      "redirect_uri": "https://psychic-enigma-q65jwpvv4673j49-5010.app.github.dev/authentication/callback",
-      "silent_redirect_uri": "https://psychic-enigma-q65jwpvv4673j49-5010.app.github.dev/authentication/silent-callback",
-      "scope": "openid profile email api offline_access",
-      "authority": "https://demo.duendesoftware.com",
-      "service_worker_relative_url": "/OidcServiceWorker.js",
-      "service_worker_only": true,
-      "token_renew_mode": "access_token_invalid"
-    }
-  },
-  "telemetry": {
-    "instrumentationKey": "",
-    "logLevel": "DEBUG",
-    "active": false
-  },
-  "datasets": {
-    "isBlobTransferActive": false,
-    "reserveHttpCallInParallel": 2,
-    "reserveBeforeEndIndex": 10
-  }
-}
-
-```
-Exemple imagé : 
-
-![environment_docker.png](00_materials/04_scoping_data_prep_label/environment_docker.png)
-
-Ajouter également cette url dans le fichier `ecotag/src/Ecotag/ClientApp/public/OidcTrustedDomains.docker.js` comme suit,
-dans `default` et `access_token` : 
-```js
-// Add here trusted domains, access tokens will be send to
-const trustedDomains = {
-    default: ["http://localhost:5010", "https://demo.duendesoftware.com", "https://psychic-enigma-q65jwpvv4673j49-5010.app.github.dev"],
-    access_token: { domains : ["http://localhost:5010", "https://demo.duendesoftware.com", "https://psychic-enigma-q65jwpvv4673j49-5010.app.github.dev"], showAccessToken: true }
-};
-```
-Et enfin, dans le fichier `ecotag/src/Ecotag/Server/StartupServer.cs`, remplacer les lignes suivantes 212 à 224 par 
-les lignes suivantes :
-```
-if (!string.IsNullOrEmpty(corsSettings.Origins))
-            services.AddCors(options =>
-            {
-                options.AddPolicy("CorsPolicy",
-                    builder =>
-                    {
-                        builder
-                            .WithOrigins("*")
-                            .AllowAnyMethod()
-                            .AllowAnyHeader()
-                            //.AllowCredentials()
-                            .SetPreflightMaxAge(TimeSpan.FromSeconds(2520));
-                    });
-            });
-```
-Et voilà ! C'est terminé ! Maintenant, jouez les commandes suivantes dans le dossier `cats_dogs_other/label/ecotag`
-```bash
-docker compose up -d
-cd ../../..
-```
-
-Cela va prendre un certain temps (attendez-vous à un bon quart d'heure), pendant ce laps de temps, 
-mettons en place la création de notre projet dans ecotag. Comme vous pouvez le voir, il existe un script 
-`ecotag.py` dans votre répertoire `label`. Ce script permet de créer notre
-équipe, notre dataset et notre projet dans ecotag, en utilisant l'API REST fournie avec la solution. Nous n'allons
-pas nous étendre sur ce qu'est une "API REST" maintenant, nous verrons ça plus tard. Retenez juste que ce script va
-contrôler à distance notre instance d'ecotag :) Vous pouvez donc parfaitement automatiser la création de vos
- datasets et projets avec ecotag ! (y)
-
-Regardons rapidement le code ensemble.
-
-Bien, maintenant, nous allons agrémenter notre script `run.py` qui pour l'instant, ne sert qu'à extraire les images de 
-nos données brutes. Nous allons également utiliser `run.py` pour créer notre projet ecotag.
-
-Pour cela, ajoutez les lignes suivantes à la suite de notre code existant : 
-```python
-    # Initialisation du projet ecotag
-    api_url = 'http://localhost:5010/api/server'
-    api_information = ApiInformation(api_url=api_url, jwt_token=jwt_token)
-
-    dataset = Dataset(dataset_name='cats_dogs_others',
-                      dataset_type='Image',
-                      team_name='cats_dogs_others',
-                      directory=postprocess_folder,
-                      classification='Public')
-    loop = get_event_loop()
-    loop.run_until_complete(create_dataset(dataset, api_information))
-
-    project = Project(project_name='cats_dogs_others',
-                      dataset_name=dataset.dataset_name,
-                      team_name='cats_dogs_others',
-                      annotationType='ImageClassifier',
-                      labels=[Label(name='cat', color='#FF0000', id="0"), Label(name='dog', color='#00FF00', id="1"), Label(name='other', color='#0000FF', id="2")])
-
-    loop.run_until_complete(create_project(project, api_information))
-```
-
-Attention, n'oubliez pas d'ajouter les imports : 
-```python
-import os
-from asyncio import get_event_loop
-
-from extraction import extract_images
-from ecotag import ApiInformation, Dataset, create_dataset, Project, Label, create_project
-```
-
-Cela donne donc au final : 
-```python
-import os
-from asyncio import get_event_loop
-
-from extraction import extract_images
-from ecotag import ApiInformation, Dataset, create_dataset, Project, Label, create_project
-
-
-if __name__ == "__main__":
-    # Préparation du dataset
-    raw_folder = "cats_dogs_other/label/dataset/_raw"
-    postprocess_folder = "cats_dogs_other/label/dataset/extract"
-    if not os.path.isdir(postprocess_folder) or not os.listdir(postprocess_folder):
-        res = extract_images(raw_folder, postprocess_folder)
-        print("files input = " + str(res.number_files_input))
-        print("files output = " + str(res.number_images_output))
-    
-    # Initialisation du projet ecotag
-    api_url = 'http://localhost:5010/api/server'
-    api_information = ApiInformation(api_url=api_url, jwt_token=jwt_token)
-
-    dataset = Dataset(dataset_name='cats_dogs_others',
-                      dataset_type='Image',
-                      team_name='cats_dogs_others',
-                      directory=postprocess_folder,
-                      classification='Public')
-    loop = get_event_loop()
-    loop.run_until_complete(create_dataset(dataset, api_information))
-
-    project = Project(project_name='cats_dogs_others',
-                      dataset_name=dataset.dataset_name,
-                      team_name='cats_dogs_others',
-                      annotationType='ImageClassifier',
-                      labels=[Label(name='cat', color='#FF0000', id="0"), Label(name='dog', color='#00FF00', id="1"), Label(name='other', color='#0000FF', id="2")])
-
-    loop.run_until_complete(create_project(project, api_information))
-```
-
-Comme vous pouvez le voir, il reste un avertissement sur `jwt_token`. Il s'agit d'un jeton d'authentification 
-(nous en reparlerons plus tard, ne vous en faites pas ;)) et cette
-variable n'a jamais été associée à une valeur, ce qui pose ici notre problème. Profitons-en pour ajouter cette valeur 
-en argument de notre script. Oui, c'est une nouveauté !! Afin d'éviter de mettre cette valeur "en dur" dans notre script,
-nous allons plutôt faire en sorte que cette valeur soit passée en argument de la commande python !
-
-Par exemple, ça donnerait un truc comme ça :
-```bash
-python cats_dogs_other/label/run.py --jwt_token=mon_beau_jeton
-```
-C'est tout de même mieux. Par définition, un jeton est amené à expirer souvent (encore une fois, nous en reparlerons),
-donc plutôt de modifier sa valeur dans le code, nous le ferons dans notre commande d'appel.
-
-Pour mettre ce dispositif en place, nous allons utiliser la librairie `argparse` : 
-
-```python
-import argparse
-
-parser = argparse.ArgumentParser("labelling")
-parser.add_argument("--jwt_token", type=str)
-
-args = parser.parse_args()
-jwt_token = args.jwt_token
-```
-
-Notez que nous pouvons spécifier le type de notre argument, ce qui est très pratique et permet de respecter nos consignes 
-de Clean code. Désormais, notre script `run.py` doit ressembler à ça : 
-```python
-import argparse
-import os
-from asyncio import get_event_loop
-
-from extraction import extract_images
-from ecotag import ApiInformation, Dataset, create_dataset, Project, Label, create_project
-
-parser = argparse.ArgumentParser("labelling")
-parser.add_argument("--jwt_token", type=str)
-
-args = parser.parse_args()
-jwt_token = args.jwt_token
-
-if __name__ == "__main__":
-    # Préparation du dataset
-    raw_folder = "cats_dogs_other/label/dataset/_raw"
-    postprocess_folder = "cats_dogs_other/label/dataset/extract"
-    if not os.path.isdir(postprocess_folder) or not os.listdir(postprocess_folder):
-        res = extract_images(raw_folder, postprocess_folder)
-        print("files input = " + str(res.number_files_input))
-        print("files output = " + str(res.number_images_output))
-    
-    # Initialisation du projet ecotag
-    api_url = 'http://localhost:5010/api/server'
-    api_information = ApiInformation(api_url=api_url, jwt_token=jwt_token)
-
-    dataset = Dataset(dataset_name='cats_dogs_others',
-                      dataset_type='Image',
-                      team_name='cats_dogs_others',
-                      directory=postprocess_folder,
-                      classification='Public')
-    loop = get_event_loop()
-    loop.run_until_complete(create_dataset(dataset, api_information))
-
-    project = Project(project_name='cats_dogs_others',
-                      dataset_name=dataset.dataset_name,
-                      team_name='cats_dogs_others',
-                      annotationType='ImageClassifier',
-                      labels=[Label(name='cat', color='#FF0000', id="0"), Label(name='dog', color='#00FF00', id="1"), Label(name='other', color='#0000FF', id="2")])
-
-    loop.run_until_complete(create_project(project, api_information))
-```
-
-Maintenant, vérifions que tout fonctionne bien. Ecotag doit en effet être correctement démarré. Pour le vérifier,
-utilisons la commande :
-```bash
-docker ps -a
-```
-Cela donne ceci :
-
-![ecotag_started.png](00_materials/04_scoping_data_prep_label/ecotag_started.png)
-
-Notez que dans la partie basse de votre codespace, à côté de l'onglet **TERMINAL**, se trouve un onglet **PORTS** avec une
-puce de notifications :
-
-![ports.png](00_materials/04_scoping_data_prep_label/ports.png)
-
-Cela signifie que vous avez des webservices qui tournent dans votre codespace et en l'occurence, normalement, ecotag.
-Pour lancer l'application Web, cliquez sur PORTS et identifier dans la liste l'url qui écoute sur le port 5010. Faites un
-clic droit sur cette ligne et sélectionner l'action contextuelle `Ouvrir dans un navigateur` : 
-
-![open_ecotag.png](00_materials/04_scoping_data_prep_label/open_ecotag.png)
-
-Vous arrivez sur une page de connection. C'est parce qu'ecotag est une application sécurisée (normal, nous travaillons avec
-de la donnée). Utilisez les identifiants de test pour ce cours : bob / bob.
-
-Et voilà ! Ecotag fonctionne ! Bravo ! Parcourons ensemble les différentes sections de cette application et allons
-chercher notre jeton d'authentification pour créer notre projet avec `run.py`.
-
-Pour le trouver, rendez-vous dans la page de gestion des datasets et cliquez sur le lien bleu : Jeton d'accès
-
-![jeton_pour_ecotag.png](00_materials/04_scoping_data_prep_label/jeton_pour_ecotag.png)
-
-Vous arrivez sur une page contenant le jeton, copiez le et enfin, collez le dans la commande suivante. Attention, vérifiez 
-bien que vous vous trouvez à la racine du projet et non pas `label/ecotag` !!
-```bash
-cd /workspaces/kto-mlops/
-python cats_dogs_other/label/run.py --jwt_token=collez_votre_jeton_ici
-```
-Puis, lancer l'initialisation du projet ecotag en exécutant cette commande ! C'est terminé, nous pouvons annoter ! Youpi !
-
-![project_created.png](00_materials/04_scoping_data_prep_label/project_created.png)
-
-Notez que normalement, vous avez déjà ajouté à la main la dépendance aiohttp dans le module précédent. Si ce n'est pas le cas
-et que vous avez l'erreur suivante : 
-
-![ecotag_erreur.png](00_materials/04_scoping_data_prep_label/ecotag_erreur.png)
-
-Faites l'installation de cette dépendance avec la commande
-```bash
-pip install aiohttp==3.9.1
-```
-OU MIEUX ! Ajoutez cette dépendance dans `label/requirements.txt` et relancez la commande d'installation de ce fichier !  
-
-Désormais, rejouez votre commande précédente ;)
-
-Désormais, vous devriez avoir ceci :
-
-![project_created.png](00_materials/04_scoping_data_prep_label/project_created.png)
-
-## Annotations des images
-
-Il est maintenant temps d'annoter notre dataset ! Pour ce faire, rendez-vous sur la page d'accueil de votre ecotag et
+Voici une petite démonstration d'annotation d'un dataset d'images ! Pour ce faire, rendez-vous sur la page d'accueil de votre ecotag et
 allez dans le menu Projets. Vous devriez voir un projet cats_dogs_other dont le statut est En cours.
 
 ![projets_en_cours.png](00_materials/04_scoping_data_prep_label/projets_en_cours.png)
@@ -642,30 +123,6 @@ Cliquez sur la flèche en haut à gauche pour revenir à la page du projet, puis
 récupérer votre export : 
 
 ![export.png](00_materials/04_scoping_data_prep_label/export.png)
-
-Copiez et collez dans le répertoire `label/dataset` le fichier téléchargé :
-
-![copy_passte_labels.png](00_materials/04_scoping_data_prep_label/copy_paste_labels.png)
-
-Prenons un peu de temps pour regarder à quoi ressemble ce fichier.
-
-Vous pouvez maintenant éteindre ecotag avec les commandes suivantes :
-```bash
-cd cats_dogs_other/label/ecotag/
-docker compose down -v
-```
-
-Sauvegardez votre travail en commitant et poussant vos modifications sur votre propre branche : 
-```bash
-cd /workspaces/kto-mlops
-git status
-git add .
-git commit -m "feat: ce que vous voulez comme message"
-git push origin votrenom/step01
-```
-
-N'oubliez pas, pousser ces informations sur votre repository git n'est pas souhaitable. Voyons désormais les alternatives
-et l'intérêt de versionner nos données dans un outil dédié.
 
 ## Versioning de la donnée et stockage
 
@@ -717,7 +174,7 @@ Pour simplifier ce cours, nous n'allons pas utiliser DVC, mais plutôt un servic
 solution de plateforme ML dédiée : [kto-mlflow](#installation-de-kto-mlflow-et-présentation-de-minio-et-dailyclean). 
 Ce ne sera pas le plus idéal et peut-être trop manuel, mais cela fonctionnera pour l'exemple ;-)
 
-### Installation de kto-mlflow et présentation de minio et DailyClean
+### Installation de kto-mlflow et présentation de minio
 
 **kto-mlflow** est une plateforme ML sur le Cloud de dernière génération développée spécifiquement pour ce cours. Nous
 reviendrons dessus plus tard dans la partie qui lui est [consacrée](./06_ml_platforms.md).
@@ -726,73 +183,48 @@ Pour l'heure, et parce qu'elle contient un service de stockage de fichiers, nous
 cette plateforme dans notre Red Hat Developer Sandbox.
 
 En voici la procédure : 
-- Connectez-vous à votre compte [Red Hat Developer](https://developers.redhat.com/)
-- Ouvrez votre [Sandbox](https://console.redhat.com/openshift/sandbox) et lancez votre
+- Connectez-vous à votre compte [Red Hat Sandbox](https://sandbox.redhat.com/)
+- Il n'est pas impossible que vous ayez à vous reconnecter
 
-![launch_openshift.png](00_materials/04_scoping_data_prep_label/launch_openshift.png)
+![006.png](img/006.png)
+![007.png](img/007.png)
 
-- Identifiez votre nom de compte RedHat OpenShift : 
+- Dans la section Devspaces, cliquez sur Try it!
 
-![find_username.png](00_materials/04_scoping_data_prep_label/find_username.png)
+![010.png](img/010.png)
 
-- Faites un Fork de https://github.com/guillaume-thomas/kto-mlflow depuis votre compte github
+- Il est possible que vous soyez amené.e à reconfirmer votre connexion.
 
-![fork_kto_mlflow.png](00_materials/04_scoping_data_prep_label/fork_kto_mlflow.png)
+![011.png](img/011.png)
 
-- Modifiez directement depuis l'interface github les fichiers ci-après. Il vous suffit de cliquer sur le nom du 
-dossier `k8s` dans github : 
+- Ouvrer votre workspace déjà existant dans Red Hat DevSpace, pour ce faire, cliquez sur les trois petits points à droite de votre
+workspace et cliquez sur Open
 
-![click_folder.png](00_materials/04_scoping_data_prep_label/click_folder.png)
+![162.png](img/162.png)
+![163.png](img/163.png)
+![164.png](img/164.png)
 
-- Puis de cliquer sur le nom du fichier à modifier : `dailyclean.yaml`, puis sur Edit. 
+Pour installer kto-mlflow, nous allons utiliser l'outil oc (OpenShift CLI). Il est déjà installé et configuré dans votre DevSpace.
+Pour simplifier l'installation, nous allons utiliser un script bash qui va faire le travail pour nous.
 
-![edit_file.png](00_materials/04_scoping_data_prep_label/edit_file.png)
-
-- Modifiez les lignes 65, 106, 112 et 116 avec le nom de votre compte RedHat OpenShift :
-Avant : 
-
-![avant2.png](00_materials/04_scoping_data_prep_label/avant2.png)
-![avant.png](00_materials/04_scoping_data_prep_label/avant.png)
-
-Après : 
-
-![apres2.png](00_materials/04_scoping_data_prep_label/apres2.png)
-![apres.png](00_materials/04_scoping_data_prep_label/apres.png)
-
-- **Cliquez sur Commit changes...**
-
-![commit_changes.png](00_materials/04_scoping_data_prep_label/commit_changes.png)
-
-- Procédez de même avec `mlflow.yaml` ligne 27 : 
-
-![change_mlflow.png](00_materials/04_scoping_data_prep_label/change_mlflow.png)
-
-- Ouvrez votre [Sandbox](https://console.redhat.com/openshift/sandbox) et lancez votre
-
-![launch_openshift.png](00_materials/04_scoping_data_prep_label/launch_openshift.png)
-
-- Une fois sur votre Dashboard d'accueil OpenShift, ouvrez votre Web Terminal
-
-![open_web_terminal.png](00_materials/04_scoping_data_prep_label/open_web_terminal.png)
-
-- Désormais, installez notre solution avec les commandes suivantes. Copiez ces lignes et faites un clic droit -> coller dans le Web Terminal
+- Identifiez le script d'installation dans le répertoire scripts de votre projet
+- Ouvrez un terminal dans votre DevSpace (Terminal -> New Terminal) si vous n'en avez pas déjà un d'ouvert
+- Modifiez les droits de l'ensemble des scripts de ce répertoire pour les rendre exécutables
 ```bash
-git clone https://github.com/VOTRE_COMPTE_GITHUB_A_METTRE_ICI/kto-mlflow
-cd kto-mlflow/k8s
-oc apply -f minio.yml
-oc apply -f mysql.yml
-oc apply -f mlflow.yml
-oc apply -f dailyclean.yml
-oc label deployment dailyclean-api axa.com/dailyclean=false
-oc label statefulset mysql axa.com/dailyclean=true
-cd ../..
-rm -rf kto-mlflow
-
+chmod -R 777 ./scripts
 ```
 
-![install_kto_mlflow.png](00_materials/04_scoping_data_prep_label/install_kto_mlflow.png)
+![124.png](img/124.png)
 
-Attention, la dernière ligne ne sera pas forcément lancée, faites Entrée dans le doute.
+- Lancez le script d'installation de kto-mlflow
+```bash
+./scripts/install_kto_mlflow.sh
+```
+- Patientez une dizaine de minutes le temps que tous les pods se déploient
+
+![125.png](img/125.png)
+
+Une fois l'installation terminée, vous devriez voir apparaître de nouveaux projets dans votre OpenShift.
 
 Nous utiliserons minio comme service de stockage de fichier. Soyez un bon citoyen ou une bonne citoyenne du Cloud,
 utilisez DailClean (compris dans cette solution), pour éteindre kto-mlflow quand vous ne vous en servez plus. Pas de
@@ -800,76 +232,134 @@ panique, votre travail sera sauvegardé malgré l'extinction.
 
 ### Procédure de sauvegarde
 
-Pour sauvegarder nos données, nous devons déjà les télécharger depuis Codespaces sur notre machine locale.
-- Rendez-vous d'abord sur votre fork Github et sélectionnez la branche dans laquelle vous aviez sauvegardé vos 
-annotations dans la liste déroulante en haut à gauche.
-- Cliquez sur le bouton vert <>Code, sélectionnez Local puis Download ZIP
+Pour sauvegarder nos données, nous devons déjà les télécharger depuis votre projet sur notre machine locale.
+- Depuis votre Devspace, identifiez le répertoire data de votre projet, un csv s'y trouve
+- Faites un clic droit sur le fichier csv et cliquez sur Download
 
-![download_zip.png](00_materials/04_scoping_data_prep_label/download_zip.png)
-
-- Dézippez ce fichier sur votre machine
+![139.png](img/139.png)
 
 Maintenant, sauvegardez ces fichiers sur le minio de kto-mlflow. Pour cela :
+- Retournez sur votre [Red Hat Sandbox](https://sandbox.redhat.com/)
+- Dans la section Openshift, cliquez sur Try it
+
+![127.png](img/127.png)
+
+- Vous arrivez sur votre OpenShift, fermez la fenêtre de bienvenue et également l'assistant IA
+
+![128.png](img/128.png)
+![129.png](img/129.png)
+
+- Passez la langue de votre OpenShift en anglais (US) pour éviter des problèmes d'affichage, cliquez sur votre profil 
+en haut à droite puis sur Préférences utilisateur
+
+![130.png](img/130.png)
+
+- Cliquez sur Langue, décochez l'option Utilisez le paramètre de langue par défaut du navigateur 
+et sélectionnez English
+
+![131.png](img/131.png)
+
+- Vérifiez que kto-mlflow est bien déployé, pour cela, dans le menu à gauche, cliquez sur Workloads -> Pods
+
+![132.png](img/132.png)
+
+- Validez que tous les pods de kto-mlflow sont bien en Running. Dans le menu projets, vérifiez qu'il est bien sélectionné
+celui portant votre login Red Hat suivi de '-dev' (ex: bob-dev)
+
+![133.png](img/133.png)
+
 - Cliquez sur Networking -> Routes sur le menu à gauche de votre OpenShift
 - Dans la liste des routes, identifiez la ligne minio-console et cliquez sur le lien de la colonne Location
-- En fonction de votre navigateur, il est possible que votre url ouverte dans votre onglet commence 
-par `https://` au lieu d'`http://` (notamment dans Chrome). Cela empêche la console de s'ouvrir correctement ... retirez le `s`
+
+![134.png](img/134.png)
+
 - Vous arrivez sur la fenêtre de connection. Saisissez le login `minio` et le mot de passe `minio123`
 
-![minio.png](00_materials/04_scoping_data_prep_label/minio.png)
+![minio.png](img/135.png)
+
+- Il est possible qu'une pop-up s'ouvre, cliquez sur Aknoledge
+
+![136.png](img/136.png)
 
 - Vous êtes automatiquement sur le navigateur d'objets
-- Dans le menu à gauche, cliquez sur Administrator -> Buckets
+- Dans le menu à gauche, cliquez sur Create Bucket +
 
-![buckets.png](00_materials/04_scoping_data_prep_label/buckets.png)
+![137.png](img/137.png)
 
-- En haut à droite, cliquez sur Create Bucket +
-
-![create_bucket.png](00_materials/04_scoping_data_prep_label/create_bucket.png)
-
-- Dans Bucket Name, saisissez le nom : `cats-dogs-other`. Attention les underscores ne sont pas autorisés !!
-- Vous pouvez mettre Versioning à On si vous le souhaitez (nous n'allons pas nous en servir dans ce projet) 
+- Dans Bucket Name, saisissez le nom : `kto-titanic`. Attention, respectez bien ce nom. Les underscores ne sont pas autorisés !!
 - Cliquez sur Create Bucket
 
-![bucket_creation.png](00_materials/04_scoping_data_prep_label/bucket_creation.png)
+![138.png](img/138.png)
 
-- Retournez dans l'Object Browser
+- Par défaut, vous êtes dans le bucket que vous venez de créer, si ce n'est pas le cas, cliquez dessus dans la liste
+des buckets dans le menu à gauche (il porte le nom kto-titanic)
 
-![object_browser.png](00_materials/04_scoping_data_prep_label/object_browser.png)
+![140.png](img/140.png)
 
-- Sélectionnez cats-dogs-other
+- Cliquez sur Upload puis Upload File
 
-![select_cats_dogs_other.png](00_materials/04_scoping_data_prep_label/select_cats_dogs_other.png)
+![141.png](img/141.png)
 
-- En haut à droite, cliquez sur Upload puis Upload folder
+- Sélectionnez votre fichier csv téléchargé précédemment puis cliquez sur Envoyer
 
-![upload_folder.png](00_materials/04_scoping_data_prep_label/upload_folder.png)
-
-- Sélectionnez votre répertoire dataset puis cliquez sur Envoyer
-
-![send_dataset.png](00_materials/04_scoping_data_prep_label/send_dataset.png)
+![142.png](img/142.png)
 
 - Confirmez l'envoie dans l'infobulle qui apparaît puis patientez quelques secondes
 - Votre dataset est maintenant sauvegardé !!
 
-![dataset_saved.png](00_materials/04_scoping_data_prep_label/dataset_saved.png)
+![143.png](img/143.png)
 
-- Ouvrez Dailyclean (attention avec cette histoire de https au lien d'http)
+- **Communiquez par mail une capture d'écran de la présence de votre dataset dans le bucket kto-titanic de votre minio console (évaluation)**
 
-![dailyclean.png](00_materials/04_scoping_data_prep_label/dailyclean.png)
-
-- Eteignez kto-mlflow avec Dailclean
-
-![shutdown_kto_mlflow.png](00_materials/04_scoping_data_prep_label/shutdown_kto_mlflow.png)
-
-- Supprimez les fichiers et le zip téléchargé. Il est certainement interdit de garder de la donnée confidentielle sur votre
-machine !!
-- **Communiquez par mail votre branche où vous avez sauvegardé vos données, mais aussi les liens vers votre Dailyclean et
-minio console (évaluation)**
+- Gardez le fichier téléchargé. Il est certes interdit de garder de la donnée confidentielle sur votre
+machine, mais ici, ce n'est pas le cas. Nous ferons une exception pour ce cours.
 
 Etant donné que l'espace de stockage va disparaître au bout des 30 jours d'activation de la Sandbox, nous allons donc malgré
-tout garder une trace de notre dataset et de nos annotations dans notre repo Git. **Ce N'EST PAS une bonne pratique**, mais 
+tout garder une trace de notre dataset. **Ce N'EST PAS une bonne pratique**, mais 
 nous devrons faire une exception à cause de ces limitations (que nous ne remettrons pas en cause, elles sont parfaitement 
 justifiées).
+
+## Présentation de DailyClean et comment démarrer kto-mlflow
+
+Terminons cette partie en parlant de DailyClean. Notre plateforme kto-mlflow embarque un outil de nettoyage automatique 
+des ressources nommé DailyClean. Cet outil permet d'éteindre automatiquement kto-mlflow chaque jour à une heure donnée.
+Cela permet de ne pas consommer inutilement des ressources Cloud. 
+
+L'outil permet également de redémarrer facilement kto-mlflow quand on en a besoin. En effet, la Sandbox Red Hat a 
+également son système d'extinction automatique au bout de 8 heures d'inactivité. 
+
+Voici comment utiliser DailyClean pour rallumer kto-mlflow quand vous en avez besoin :
+- Connectez-vous à votre [Red Hat Sandbox](https://sandbox.redhat.com/)
+- Dans la section Openshift, cliquez sur Try it
+- Vous arrivez sur votre OpenShift
+- Démarrez manuellement DailyClean s'il n'est pas déjà en route, cliquez sur Workloads -> Deployment dans le menu à gauche
+- Identifiez dailyclean-api dans la liste des déploiements et cliquez dessus
+
+![144.png](img/144.png)
+
+- Un cercle avec indiqué Scaled to 0 devrait apparaître. Si ce n'est pas le cas, ne faites rien. 
+Sinon, cliquez sur l'icône de la flèche vers le haut, à droite de ce cercle et attendez que le scaling soit terminé.
+
+![145.png](img/145.png)
+![146.png](img/146.png)
+
+- Dans le menu à gauche, cliquez sur Networking -> Routes
+- Dans la liste des routes, identifiez la ligne dailyclean et cliquez sur le lien de la colonne Location
+
+![147.png](img/147.png)
+
+- Vous arrivez sur la page d'accueil de DailyClean
+- Constatez que le statut de votre environnement est bien Arrêté (Stopped)
+
+![148.png](img/148.png)
+
+- Cliquez sur On dans le menu Turn Environment, puis cliquez sur Submit pour démarrer kto-mlflow
+
+![149.png](img/149.png)
+
+- Patientez quelques minutes le temps que tous les pods se déploient
+
+![150.png](img/150.png)
+![151.png](img/151.png)
 
 Cette partie est terminée ! Bravo !
