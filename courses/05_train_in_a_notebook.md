@@ -19,7 +19,7 @@ Nous allons d'abord commencer par structurer un peu notre pensée. Normalement, 
 des boûts de code sans structure particulière. Pour les besoins de la clarté de ce cours, nous allons tout de même cadrer un
 peu les choses.
 
-Nous allons diviser notre notebook en 4 parties distinctes. 
+Nous allons diviser notre notebook en 5 parties distinctes. 
 - Supprimez la première cellule de votre notebook 
 
 ![153.png](img/153.png)
@@ -29,12 +29,13 @@ Nous allons diviser notre notebook en 4 parties distinctes.
 ![154.png](img/154.png)
 ![155.png](img/155.png)
 
-- Mettons maintenant dans chaque cellule, les 4 titres suivants :
+- Mettons maintenant dans chaque cellule, les 5 titres suivants :
 ```markdown
 # Create s3 client and download data from minio
 # Random split train / test
 # Train ML model
 # Evaluate ML model
+# Training Pipeline
 ```
 
 ![157.png](img/157.png)
@@ -63,29 +64,78 @@ chaque partie.
 
 ### Connection à S3
 
-- Dans la première cellule de votre notebook, mettez cette ligne, cela installera un client permettant de télécharger les
-  fichiers stockés dans minio :
+- Dans votre terminal, utilisez uv pour installer cette dépendance, cela installera un client permettant de télécharger les
+  fichiers stockés dans minio (boto3). Nous allons également ajouter ydata-profiling pour faire un rapport de profilage des données
+. Nous allons également installer scikit-learn et pandas qui nous seront utiles par la suite.:
 ```bash
-pip install boto3
+uv add mlflow[extras]==3.8.1 --group training
+uv add ydata-profiling==4.18.0 --group training
+uv add scikit-learn==1.8.0
+uv add pandas==2.3.3
 ```
-- Lancez cette cellule à partir de ce bouton :
 
-![run_cell_and_advance.png](00_materials/05_train_in_a_notebook/run_cell_and_advance.png)
+![165.png](img/165.png)
 
-- Le retour de la console indique qu'il faut redémarrer le kernel pour prendre les installations en compte.
+- Maintenant que la dépendance est installée, revenons dans notre notebook
+- Avant d'exécuter du code, vous devez sélectionner votre kernel Python. Pour cela, cliquez sur le bouton en haut à droite
+  indiquant `Select Kernel` et sélectionnez dans la liste l'installation de l'extension. Trustez le plugin si demandé.
 
-![restart_kernel.png](00_materials/05_train_in_a_notebook/restart_kernel.png)
+![166.png](img/166.png)
+![190.png](img/190.png)
 
-- Maintenant, créez une nouvelle cellule et insérez le code ci-dessous : 
+- Sélectionnez votre .venv en tant qu'environnement d'exécution en sélectionnant dans la liste `Python Environment` et en choisissant
+  le chemin `/.venv/bin/python`. Notez bien que votre .venv est bien le Kernel utilisé.
+
+![167.png](img/167.png)
+![168.png](img/168.png)
+![191.png](img/191.png)
+
+- Vous aurez besoin de récupérer les informations de connexion à minio, notamment, une url de connexion. 
+Pour cela, ouvrez un terminal et exécutez la commande suivante :
+```bash
+echo "https://$(oc get route minio-api -o jsonpath='{.spec.host}')"
+```
+
+Vous pouvez également récupérer cette url depuis Openshift Developer Sandbox en allant 
+dans `Networking` > `Routes` > `minio-api` et en copiant le lien dans le champ `Location`.
+
+![173.png](img/173.png)
+
+- Maintenant, dans la cellule correspondante, insérez le code ci-dessous : 
 ```python
-import boto3
+import logging
+import os
+from pathlib import Path
+import tempfile
+import subprocess
 
-s3_client = boto3.client(
+import boto3
+import pandas as pd
+from ydata_profiling import ProfileReport
+
+MLFLOW_S3_ENDPOINT_URL = "https://minio-api-kto-gthomas-dev.apps.rm3.7wse.p1.openshiftapps.com" # <--- mettez ici votre endpoint minio
+AWS_ACCESS_KEY_ID = "minio"
+AWS_SECRET_ACCESS_KEY = "minio123"
+
+def load_data(path: str) -> str:
+  local_path = Path("./", "data.csv")
+  logging.warning(f"to path : {local_path}")
+
+  s3_client = boto3.client(
     "s3",
-    endpoint_url="http://minio-api-blabla-dev.apps.sandbox-m3.666.p1.openshiftapps.com",
-    aws_access_key_id="minio",
-    aws_secret_access_key="minio123"
-)
+    endpoint_url=MLFLOW_S3_ENDPOINT_URL,
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+  )
+
+  s3_client.download_file("kto-titanic", path, local_path)
+  df = pd.read_csv(local_path)
+
+  profile = ProfileReport(df, title=f"Profiling Report - {local_path.stem}")
+  profile_path = Path("./", "profile.html")
+  profile.to_file(profile_path)
+
+  return local_path
 ```
 - **Prenez bien garde à bien mettre le lien vers votre API minio à vous**
 - Exécutez ce code
@@ -97,398 +147,186 @@ en mesure de télécharger des fichiers se trouvant dans minio.
 
 Cette partie de votre notebook, sans les logs d'exécutions, doit ressembler à ceci :
 
-![s3_client.png](00_materials/05_train_in_a_notebook/s3_client.png)
+![175.png](img/175.png)
 
-### Extraction des annotations
-
-Dans cette partie, nous allons télécharger notre fichier des annotations produit avec ecotag et que nous avons chargé dans
-minio. Puis, nous allons extraire les informations qui s'y trouvent dans un `dict` et un `set`. Dans le dictionnaire,
-nous mettrons en clé le nom du fichier et en valeur, la classe de ce fichier. Dans le set, nous mettrons l'ensemble des 
-classes rencontrées. Donc normalement, en fin d'exécution, nous devrions avec dans ce set les valeurs `cat`, `dog` et `other`.
-
-- Dans la première cellule de cette partie, nous allons définir une fonction qui fait ce qui est indiqué ci-dessus : 
-```python
-import json
-from pathlib import Path
-from typing import Any
-
-def extraction_from_annotation_file(bucket_name: str, s3_path: str, filename: str, s3_client) -> tuple[dict[Any, Any], set[Any]]:
-    Path(filename).parent.mkdir(parents=True, exist_ok=True)
-    s3_client.download_file(bucket_name, s3_path, filename)
-
-    extract = {}
-    classes = set()
-    with open(filename) as file:
-        annotations = json.load(file)["annotations"]
-        for annotation in annotations:
-            label = annotation["annotation"]["label"]
-            extract[annotation["fileName"]] = label
-            classes.add(label)
-    return extract, classes
-```
-- Parlons de ce code ensemble et exécutez le
-- Créez une nouvelle cellule en dessous pour exécuter cette fonction :
-```python
-working_dir = "./dist"
-bucket_name = "cats-dogs-other"
-extract, classes = extraction_from_annotation_file(bucket_name, 
-                                                    "dataset/cats_dogs_others-annotations.json",
-                                                    working_dir + "/cats_dogs_others-annotations.json",
-                                                    s3_client)
-```
-- Exécutez ce code
-
-Comme vous pouvez le voir, nous créons dans notre environnement de travail des répertoires de destination pour les fichiers
-téléchargés et même pour plus tard, les fichiers créés. Ce "répertoire de travail", `dist` sera créé à la racine du notebook,
-donc dans le répertoire train. Notez que tous les répertoires dist se trouvant dans notre projet serons ignorés par git, car
-présents dans le fichier .gitignore à la racine de notre projet.
-
-Votre notebook devrait ressembler à ceci pour cette partie :
-
-![extract_in_notebook.png](00_materials/05_train_in_a_notebook/extract_in_notebook.png)
-
-Si vous vous rendez dans le répertoire dist nouvellement créé, vous devriez retrouver notre fichier d'annotations.
-
-Pour tester que tout a bien fonctionné, vous pouvez créer une nouvelle cellule et regarder les valeurs stockées dans les
-variables `extract` et `classes`. Passons maintenant au split de notre donnée.
 
 ### Split de la donnée
 
-Le but de cette partie est de diviser notre dataset en trois parties. Chaque partie est dédiée :
+Le but de cette partie est de diviser notre dataset en deux parties. Chaque partie est dédiée :
 - à l'entraînement de notre modèle
 - à l'évaluation de notre modèle
-- au test de notre modèle final
 
-Pour ce faire, nous allons partager aléatoirement le dictionnaire contenant les noms de nos fichiers et leurs classes
-associées, à partir de trois ratios paramétrables. Ce partage donnera lieu à trois dictionnaires : un pour le train, un
-pour l'évaluation et un pour le test. Et pour chaque dictionnaire, nous allons télécharger les fichiers et les positionner
-dans des répertoires spécifiques : Trois répertoires train, evaluate, test et tous les trois subdivisés en trois classes : 
-cat, dog et other. Ces répertoires seront créés dans le répertoire de travail dist créé dans l'étape précédente.
+Pour ce faire, nous allons partager aléatoirement le dataset en utilisant scikit-learn.
 
-Pour ce faire :
-- Dans la permière cellule, crééz trois variables contenant les chemins des répertoires train, evaluate et test :
+- Dans une nouvelle cellule, définissez cette fonction : 
 ```python
-train_dir = working_dir + "/train"
-evaluate_dir = working_dir + "/evaluate"
-test_dir = working_dir + "/test"
+import sklearn.model_selection
+
+FEATURES = ["Pclass", "Sex", "SibSp", "Parch"]
+
+TARGET = "Survived"
+
+
+def split_train_test(data_path: str) -> tuple[str, str, str, str]:
+  logging.warning(f"split on {data_path}")
+
+  df = pd.read_csv(data_path, index_col=False)
+
+  y = df[TARGET]
+  x = df[FEATURES]
+  x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size=0.3, random_state=42)
+
+  datasets = [
+    (x_train, "xtrain", "xtrain.csv"),
+    (x_test, "xtest", "xtest.csv"),
+    (y_train, "ytrain", "ytrain.csv"),
+    (y_test, "ytest", "ytest.csv"),
+  ]
+
+  artifact_paths = []
+  for data, artifact_path, filename in datasets:
+    file_path = Path("./", filename)
+    data.to_csv(file_path, index=False)
+    artifact_paths.append(file_path)
+
+  return tuple(artifact_paths)
 ```
-- N'oubliez pas d'exécuter le code à chaque fois 
-- Dans une nouvelle cellule, définissez ces deux fonctions : 
-```python
-import random
-from pathlib import Path
-
-def random_split_train_evaluate_test_from_extraction(extract: dict,
-                                                     classes: set,
-                                                     split_ratio_train: float,
-                                                     split_ratio_evaluate: float,
-                                                     split_ratio_test: float,
-                                                     train_dir: str,
-                                                     evaluate_dir: str,
-                                                     test_dir: str,
-                                                     bucket_name: str,
-                                                     s3_path: str,
-                                                     s3_client):
-
-    if split_ratio_train + split_ratio_evaluate + split_ratio_test != 1:
-        raise Exception("sum of ratio must be equal to 1")
-
-    keys_list = list(extract.keys())  # shuffle() wants a list
-    random.shuffle(keys_list)  # randomize the order of the keys
-
-    nkeys_train = int(split_ratio_train * len(keys_list))  # how many keys does split ratio train% equal
-    keys_train = keys_list[:nkeys_train]
-    keys_evaluate_and_test = keys_list[nkeys_train:]
-
-    split_ratio_evaluate_and_test = split_ratio_evaluate + split_ratio_test
-    nkeys_evaluate = int((split_ratio_evaluate / split_ratio_evaluate_and_test) * len(keys_evaluate_and_test))
-    keys_evaluate = keys_evaluate_and_test[:nkeys_evaluate]
-    keys_test = keys_evaluate_and_test[nkeys_evaluate:]
-
-    extract_train = {k: extract[k] for k in keys_train}
-    extract_evaluate = {k: extract[k] for k in keys_evaluate}
-    extract_test = {k: extract[k] for k in keys_test}
-
-    # create directories
-    for existing_class in classes:
-        Path(train_dir + "/" + existing_class).mkdir(parents=True, exist_ok=True)
-        Path(evaluate_dir + "/" + existing_class).mkdir(parents=True, exist_ok=True)
-        Path(test_dir + "/" + existing_class).mkdir(parents=True, exist_ok=True)
-
-    # add files in directories
-    download_files(extract_train, train_dir, bucket_name, s3_path, s3_client)
-    download_files(extract_evaluate, evaluate_dir, bucket_name, s3_path, s3_client)
-    download_files(extract_test, test_dir, bucket_name, s3_path, s3_client)
-
-
-def download_files(extract: dict, directory: str, bucket_name: str, s3_path: str, s3_client):
-    for key, value in extract.items():
-        s3_client.download_file(bucket_name, s3_path + key, directory + "/" + value + "/" + key)
-```
-- Discutons rapidement du code ensemble
-- Définissons désormais trois ratios dans des variables et exécutons la fonction `random_split_train_evaluate_test_from_extraction`
-```python
-split_ratio_train = 0.8
-split_ratio_evaluate = 0.1
-split_ratio_test = 0.1
-
-random_split_train_evaluate_test_from_extraction(extract, classes, split_ratio_train,
-                                                 split_ratio_evaluate, split_ratio_test,
-                                                 train_dir, evaluate_dir, test_dir, bucket_name,
-                                                 "dataset/extract/", s3_client)
-```
+- Discutons rapidement de ce code
+- Exécutons cette cellule
 
 Votre partie devrait ressembler à ceci dans votre notebook :
 
-![split_in_notebook_1.png](00_materials/05_train_in_a_notebook/split_in_notebook_1.png)
-![split_in_notebook_2.png](00_materials/05_train_in_a_notebook/split_in_notebook_2.png)
+![176.png](img/176.png)
 
-Si vous allez dans dist, vous devriez retrouver vos fichiers ordonnés comme vu dans la consigne en début de cette partie.
-Passons maintenant à la création de notre modèle.
+### Entrainement de notre modèle
 
-### Entrainement et évaluation de notre modèle
+Pour entraîner notre modèle, nous allons utiliser scikit-learn. Dans la cellule de cette partie,
+mettez ce code :
 
-Pour entraîner notre modèle, nous allons utiliser tensorflow. Dans la première cellule de cette partie,
-mettez ce code pour installer les librairies utiles :
-
-```bash
-pip install tensorflow matplotlib scipy
-```
-
-Dans une seconde cellule, nous allons créer les variables suivantes : 
 ```python
-model_filename = "final_model.keras"
-model_plot_filename = "model_plot.png"
-batch_size = 64 
-epochs = 4
+import joblib
+from sklearn.ensemble import RandomForestClassifier
 
-# train & evaluate
-model_dir = working_dir + "/model"
-model_path = model_dir + "/" + model_filename
-plot_filepath = model_dir + "/" + model_plot_filename
+ARTIFACT_PATH = "model_trained"
+
+
+def train(x_train_path: str, y_train_path: str, n_estimators: int, max_depth: int, random_state: int) -> str:
+  logging.warning(f"train {x_train_path} {y_train_path}")
+  x_train = pd.read_csv(x_train_path, index_col=False)
+  y_train = pd.read_csv(y_train_path, index_col=False)
+
+  x_train = pd.get_dummies(x_train)
+
+  model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=random_state)
+  model.fit(x_train, y_train)
+
+  model_filename = "model.joblib"
+
+  model_path = Path("./", model_filename)
+  joblib.dump(model, model_path)
+
+
+  return model_filename
 ```
 
-Créons maintenant les fonctions utiles à l'entraînement, l'évaluation et la création de graphiques pour notre modèle :
-```python
-from pathlib import Path
-
-from keras import Model
-from keras.src.applications.vgg16 import VGG16
-from keras.src.callbacks import History
-from keras.src.layers import Dropout, Flatten, Dense
-from keras.src.losses import SparseCategoricalCrossentropy
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from matplotlib import pyplot
-
-def train_and_evaluate_model(train_dir: str,
-                             evaluate_dir: str,
-                             test_dir: str,
-                             model_dir: str,
-                             model_path: str,
-                             plot_filepath: str,
-                             batch_size: int,
-                             epochs: int):
-    model = define_model()
-
-    # create data generator
-    datagen = ImageDataGenerator(featurewise_center=True)
-    # specify imagenet mean values for centering
-    datagen.mean = [123.68, 116.779, 103.939]
-    # prepare iterator
-    train_it = datagen.flow_from_directory(
-        train_dir,
-        class_mode="binary",
-        batch_size=batch_size,
-        target_size=(224, 224)
-    )
-    validation_it = datagen.flow_from_directory(
-        evaluate_dir,
-        class_mode="binary",
-        batch_size=batch_size,
-        target_size=(224, 224)
-    )
-    # fit model
-    history = model.fit(
-        train_it,
-        steps_per_epoch=len(train_it),
-        validation_data=validation_it,
-        validation_steps=len(validation_it),
-        epochs=epochs,
-        verbose=1,
-    )
-    # test model
-    evaluate_it = datagen.flow_from_directory(
-        test_dir,
-        class_mode="binary",
-        batch_size=batch_size,
-        target_size=(224, 224)
-    )
-    _, acc = model.evaluate(evaluate_it, steps=len(evaluate_it), verbose=1)
-    evaluate_accuracy_percentage = acc * 100.0
-    print("> %.3f" % evaluate_accuracy_percentage)
-
-    Path(model_dir).mkdir(parents=True, exist_ok=True)
-
-    create_history_plots(history, plot_filepath)
-
-    model.save(model_path)
-
-def define_model() -> Model:
-    model = VGG16(include_top=False, input_shape=(224, 224, 3))
-    # mark loaded layers as not trainable
-    for layer in model.layers:
-        layer.trainable = False
-    # add new classifier layers
-    output = model.layers[-1].output
-    drop1 = Dropout(0.2)(output)
-    flat1 = Flatten()(drop1)
-    class1 = Dense(64, activation="relu", kernel_initializer="he_uniform")(flat1)
-    output = Dense(3, activation="sigmoid")(class1)
-    # define new model
-    model = Model(inputs=model.inputs, outputs=output)
-    # compile model
-    model.compile(optimizer='adam',
-                  loss=SparseCategoricalCrossentropy(from_logits=True),
-                  metrics=['accuracy'])
-    return model
+- Discutons rapidement de ce code
+- Exécutons cette cellule
 
 
-def create_history_plots(history: History, plot_filepath: str):
-    # plot loss
-    pyplot.subplot(211)
-    pyplot.title("Cross Entropy Loss")
-    pyplot.plot(history.history["loss"], color="blue", label="train")
-    pyplot.plot(history.history["val_loss"], color="orange", label="test")
-    # plot accuracy
-    pyplot.subplot(212)
-    pyplot.title("Classification Accuracy")
-    pyplot.plot(history.history["accuracy"], color="blue", label="train")
-    pyplot.plot(history.history["val_accuracy"], color="orange", label="test")
-    # save plot to file
-    pyplot.savefig(plot_filepath)
-    pyplot.close()
 
-```
+Votre notebook devrait ressembler à ceci : 
 
-Enfin, exécutons le train avec la cellule suivante : 
-```python
-train_and_evaluate_model(train_dir, evaluate_dir, test_dir, model_dir, model_path,
-                         plot_filepath, batch_size, epochs)
-```
+![177.png](img/177.png)
 
-Attention son exécution devrait prendre un certain temps. Votre notebook devrait ressembler à ceci : 
+### Evaluation du modèle
 
-![train_in_notebook_1.png](00_materials/05_train_in_a_notebook/train_in_notebook_1.png)
-![train_in_notebook_2.png](00_materials/05_train_in_a_notebook/train_in_notebook_2.png)
-![train_in_notebook_3.png](00_materials/05_train_in_a_notebook/train_in_notebook_3.png)
-
-### Test du modèle
-
-Dernière étape, le test du modèle. Dans un premier temps, nous mettrons en place un bout de code permettant d'inférer
-sur notre modèle nouvellement créé. Puis nous ferons des prédictions à partir des images dans test et en tirerons des
+Dernière étape, l'évaluation du modèle. Dans un premier temps, nous mettrons en place un bout de code permettant d'inférer
+sur notre modèle nouvellement créé. Puis nous ferons des prédictions et en tirerons des
 statistiques simples.
 
-- Dans notre première cellule, notre code de chargement de notre modèle et les prédictions sur des images données 
-en paramètres
+- Dans notre cellule, voici notre code de chargement de notre modèle et les prédictions :
 ```python
-from io import BytesIO
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, median_absolute_error
 
-import numpy as np
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
-from keras.models import load_model
-from pathlib import Path
+def validate(model_path: str, x_test_path: str, y_test_path: str) -> None:
+  logging.warning(f"validate {model_path}")
+  model = joblib.load(model_path)
 
+  x_test = pd.read_csv(x_test_path, index_col=False)
+  y_test = pd.read_csv(y_test_path, index_col=False)
 
-# load and prepare the image
-def load_image(filename: str|BytesIO):
-    # load the image
-    img = load_img(filename, target_size=(224, 224))
-    # convert to array
-    img = img_to_array(img)
-    # reshape into a single sample with 3 channels
-    img = img.reshape(1, 224, 224, 3)
-    # center pixel data
-    img = img.astype('float32')
-    img = img - [123.68, 116.779, 103.939]
-    return img
+  x_test = pd.get_dummies(x_test)
 
-class Inference:
-    def __init__(self, model_path: str):
-        self.model = load_model(model_path)
+  if y_test.shape[1] == 1:
+    y_test = y_test.iloc[:, 0]
 
-    def execute(self, filepath:str|BytesIO):
-        img = load_image(filepath)
-        result = self.model.predict(img)
-        values = [float(result[0][0]), float(result[0][1]), float(result[0][2])]
-        switcher = ['Cat', 'Dog', 'Other']
-        prediction = np.argmax(result[0])
-        return {"prediction": switcher[prediction], "values": values}
+  y_pred = model.predict(x_test)
 
+  mse = mean_squared_error(y_test, y_pred)
+  mae = mean_absolute_error(y_test, y_pred)
+  r2 = r2_score(y_test, y_pred)
+  medae = median_absolute_error(y_test, y_pred)
+
+  feature_names = x_test.columns.tolist()
+
+  if hasattr(model, "feature_importances_"):
+    importances = model.feature_importances_
+    feature_importance = {
+      name: float(importance) for name, importance in zip(feature_names, importances, strict=False)
+    }
+  elif hasattr(model, "coef_"):
+    coefs = model.coef_
+    if hasattr(coefs, "shape") and len(coefs.shape) > 1:
+      coefs = coefs[0]
+    feature_importance = {name: float(coef) for name, coef in zip(feature_names, coefs, strict=False)}
+  else:
+    feature_importance = {name: 0.0 for name in feature_names}
+    logging.warning("Model does not have feature importance attributes")
+
+  logging.warning(f"mse : {mse}")
+  logging.warning(f"mae : {mae}")
+  logging.warning(f"r2 : {r2}")
+  logging.warning(f"medae : {medae}")
+  logging.warning(f"feature importance : {feature_importance}")
 ```
 - Commentons rapidement ce code
-- Dans une autre cellule, définissons une fonction de test utilisant le code d'inférence ci-dessus et permettant de comparer
-l'attendu avec ce qui est prédit par notre modèle 
+- Exécutons cette cellule
+
+Votre code devrait ressembler à ceci :
+![178.png](img/178.png)
+
+Vous pourrez maintenant constater de la performance de votre modèle !
+
+### Pipeline d'entraînement
+
+Dernière étape, nous allons orchestrer toutes les étapes précédentes dans une seule cellule.
+- Dans la cellule de cette partie, insérez ce code : 
 ```python
-import json
-from pathlib import Path
-
-def test_model(model_inference: Inference, model_dir: str, test_dir: str):
-    statistics = {"ok": 0, "ko": 0, "total": 0}
-    results = []
-    path_test_dir = Path(test_dir)
-    for path in path_test_dir.glob("**/*"):
-        if path.is_dir():
-            continue
-        model_result = model_inference.execute(str(path))
-
-        prediction = model_result["prediction"]
-        prediction_truth = path.parent.name.lower().replace("s", "")
-        status = prediction_truth == prediction.lower()
-        statistics["ok" if status else "ko"] += 1
-        result = {
-            "filename": path.name,
-            "ok": status,
-            "prediction": prediction,
-            "prediction_truth": prediction_truth,
-            "values": model_result["values"],
-        }
-        results.append(result)
-    statistics["total"] = statistics["ok"] + statistics["ko"]
-
-    with open(model_dir + "/statistics.json", "w") as file_stream:
-        json.dump(statistics, file_stream, indent=4)
-
-    with open(model_dir + "/predictions.json", "w") as file_stream:
-        json.dump(results, file_stream, indent=4)
-
+local_path = load_data("all_titanic.csv")
+xtrain_path, xtest_path, ytrain_path, ytest_path = split_train_test(local_path)
+model_path = train(xtrain_path, ytrain_path, 100, 10, 42)
+validate(model_path, xtest_path, ytest_path)
 ```
-- Discutons sur code
-- Enfin, lançons notre test 
+- Discutons rapidement de ce code
+- Exécutons cette cellule
 
-```python
-# test the model
-model_inference = Inference(model_path)
+Votre notebook devrait ressembler à ceci :
 
-test_model(model_inference, model_dir, test_dir)
-```
+![179.png](img/179.png)
 
-Votre code devrait ressembler à ceci : 
-
-![test_in_notebook_1.png](00_materials/05_train_in_a_notebook/test_in_notebook_1.png)
-![test_in_notebook_2.png](00_materials/05_train_in_a_notebook/test_in_notebook_2.png)
-
-Vous pouvez maintenant constater de la performance de votre modèle avec les graphiques dans dist !
-
-Et voilà ! Vous avez entraîné votre première IA avec Jupyter. **Veuillez télécharger votre notebook (clic droit sur son nom) 
-et faites le parvenir par mail à votre professeur (évaluation).**
-
-![download_notebook.png](00_materials/05_train_in_a_notebook/download_notebook.png)
+Et voilà ! Vous avez entraîné votre première IA avec un notebook et constatez ses performances. 
+**Veuillez commiter et pousser sur votre repository github vos modifications (évaluation).**
 
 
-Vous pouvez maintenant éteindre JupyterLab en faisant CTRL+C dans le Terminal de votre Codespace et en confirmant dans
-les 5 secondes : 
+![180.png](img/180.png)
 
-![shutting_down_jupyter.png](00_materials/05_train_in_a_notebook/shutting_down_jupyter.png)
+Vous pouvez également supprimer les fichiers générés dans le répertoire `notebooks` si vous le souhaitez.
+
+![192.png](img/192.png)
+![193.png](img/193.png)
+![194.png](img/194.png)
+![195.png](img/195.png)
+![196.png](img/196.png)
 
 Maintenant, remettons un peu en cause cette démarche ...
 

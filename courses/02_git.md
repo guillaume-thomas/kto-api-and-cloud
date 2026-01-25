@@ -191,10 +191,16 @@ kto-titanic à partir d'un template cookiecutter.
 
 ![016.png](img/016.png)
 
-- Installez cookiecutter et uv avec la commande `pip install cookiecutter uv`
+- Installez cookiecutter avec la commande `pip install cookiecutter`
 
 ![017.png](img/017.png)
 ![018.png](img/018.png)
+
+- Installez également uv avec la commande bash suivante :
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
 Avant de créer notre projet, nous avons besoin de quelques informations qui nous serviront à configurer le projet correctement.
 En effet, nous avons besoin d'un compte Quay.io pour héberger nos images Docker. En créant votre compte RedHat Developer, vous avez automatiquement un compte Quay.io.
@@ -260,6 +266,39 @@ Votre projet est maintenant créé. Nous allons maintenant le configurer pour qu
 - Votre projet s'ouvre dans l'interface graphique de votre DevSpace, il est possible que la page se recharge. Veuillez patienter.
 
 ![038.png](img/038.png)
+
+Avant d'aller plus loin, nous devons changer la configuration de notre Devspaces. Notez la présence d'un fichier `devfile.yaml` dans l'explorateur de fichiers.
+
+![181.png](img/181.png)
+
+- Dans le menu de commande en haut, tapez `>Restart Workspace from Local Devfile` et sélectionnez cette option
+
+![182.png](img/182.png)
+
+- Sélectionnez votre fichier devfile.yaml dans le menu qui s'ouvre
+
+![183.png](img/183.png)
+
+- Cliquez sur Restart
+
+![184.png](img/184.png)
+![185.png](img/185.png)
+![186.png](img/186.png)
+
+- Constatez que votre workspace redémarre avec la nouvelle configuration. Nous avons plus de RAM et de CPU. Constatez
+également la présence de votre .venv (il n'est pas encore créé à ce stade, mais il est déjà configuré) 
+dans le PATH avec la commande `echo $PATH`
+
+![187.png](img/187.png)
+![189.png](img/189.png)
+
+- Justement, pour créer votre .venv, installez également uv avec la commande bash suivante :
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+![188.png](img/188.png)
 
 Prenons maintenant quelques instants pour observer la structure du projet. Vous y trouverez notamment :
 - Un dossier scripts/ qui contiendra nos scripts d'installation de kto-mlflow, de lancement de nos expérimentations à la main, etc.
