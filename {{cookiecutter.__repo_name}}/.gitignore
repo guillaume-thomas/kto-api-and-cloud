@@ -167,3 +167,6 @@ cython_debug/
 .ruff_cache
 
 scripts/
+
+!scripts/install-mlflow.sh
+!scripts/uninstall-mlflow.sh
