@@ -170,10 +170,7 @@ Il peut également gérer les versions de Python, permettant aux développeurs d
 
 Pour information, les dépendances de notre projet sont listées dans le fichier `pyproject.toml` à la racine de notre projet.
 
-Le fichier existe déjà et n'est pas complet. Nous allons néanmoins déjà créer un environnement uv pour notre projet. 
-
-
-### UV Evaluation
+Le fichier existe déjà et n'est pas complet. Nous allons néanmoins déjà créer un environnement uv pour notre projet.
 
 Pour ce faire, dans le terminal de votre Devspace, exécutez la commande suivante : 
 ```bash
@@ -197,7 +194,8 @@ source .venv/bin/activate
 
 ![051.png](img/051.png)
 
-**Evaluation : commitez et poussez votre fichier `uv.lock` sur votre branche personnelle.**
+> ⚠️ **Évaluation** : ****Commitez et poussez votre fichier `uv.lock` et le reste de votre avancement sur votre branche.
+> Prévenez le professeur par mail de votre avancée, joignez le lien vers votre repository github**
 
 ### Notre premier script
 
@@ -484,9 +482,8 @@ forcément de TDD durant ce cours, mais son utilisation est vivement recommandé
 
 ![119.png](img/119.png)
 
-### Python Evaluation
-
-Commitez et poussez l'intégralité de votre code sur votre branche main.
+> ⚠️ **Évaluation** : **Commitez et poussez l'intégralité de votre code sur votre branche main. Prévenez le professeur par mail.
+> Indiquez bien également le lien vers votre repo github.**
 
 ![120.png](img/120.png)
 ![121.png](img/121.png)
@@ -519,5 +516,6 @@ modification.**
 pas compromis le bon fonctionnement de votre fonction. Cela fera partie de la notation. Le test unitaire **DOIT TOUJOURS**
 être passant (statut OK).
 
-Créez un nouveau commit avec votre code refactoré. Faites en sorte que le commit soit clair et explicite sur les modifications apportées.
-Poussez votre commit sur votre branche main.
+
+> ⚠️ **Évaluation** : **Créez un nouveau commit avec votre code refactoré. Faites en sorte que le commit soit clair et explicite sur les modifications apportées.
+Poussez votre commit sur votre branche main.**

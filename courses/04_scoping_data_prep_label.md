@@ -309,7 +309,9 @@ des buckets dans le menu à gauche (il porte le nom kto-titanic)
 
 ![143.png](img/143.png)
 
-- **Communiquez par mail une capture d'écran de la présence de votre dataset dans le bucket kto-titanic de votre minio console (évaluation)**
+> ⚠️ **Évaluation** : **Communiquez par mail une capture d'écran de la présence de votre dataset dans le bucket 
+> kto-titanic de votre minio console.**
+
 
 - Gardez le fichier téléchargé. Il est certes interdit de garder de la donnée confidentielle sur votre
 machine, mais ici, ce n'est pas le cas. Nous ferons une exception pour ce cours.

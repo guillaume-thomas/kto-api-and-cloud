@@ -105,7 +105,7 @@ Pour les réalisations pratiques de ce cours, vous aurez besoin :
 ![join_reh_hat_dev.png](img/004.png)
 
 - Replissez le formulaire d'inscription et cliquez sur Create my account
-- **POUR SIMPLIFIER LA SUITE, N'UTILISEZ PAS DE LOGIN AVEC DES CARACTÈRES SPÉCIAUX (POINTS, ACCENTS, TIRETS BAS, 
+> ⚠️ **Attention** : **POUR SIMPLIFIER LA SUITE, N'UTILISEZ PAS DE LOGIN AVEC DES CARACTÈRES SPÉCIAUX (POINTS, ACCENTS, TIRETS BAS, 
 ESPACES, ETC.). EN GROS, NE FAITES PAS COMME DANS L'EXEMPLE CI-DESSOUS :-P**
 
 ![red_hat_form.png](00_materials/01_intro/red_hat_form.png)
@@ -133,7 +133,10 @@ ESPACES, ETC.). EN GROS, NE FAITES PAS COMME DANS L'EXEMPLE CI-DESSOUS :-P**
 
 ![010.png](img/010.png)
 
-- C'est terminé, **partagez avec le professeur le lien vers compte github par mail (exemple ci-dessous), mais aussi votre compte Red Hat (évaluation)**
+- C'est terminé ! 
+
+> ⚠️ **Évaluation** : **partagez avec le professeur le lien vers compte github par mail (exemple ci-dessous), mais aussi
+> votre compte Red Hat**
 
 ![009.png](img/009.png)
 

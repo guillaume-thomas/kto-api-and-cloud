@@ -35,8 +35,9 @@ Pour cela, utilisez les commande suivante en remplaçant `<votre_nom_utilisateur
 
 ```bash
 git remote set-url origin https://<votre_nom_utilisateur>:<votre_token>@github.com/<votre_nom_utilisateur>/<nom_du_repository>.git
-git config --global user.name "<votre_nom_utilisateur>"
-git config --global user.email "<votre_email>"
+git config user.name "<votre_nom_utilisateur>"
+git config user.email "<votre_email>"
+git config core.editor "vim"
 ```
 
 ![202.png](./courses/img/202.png)
@@ -71,9 +72,14 @@ chmod -R 777 scripts
 
 ![207.png](./courses/img/207.png)
 
+- Votre dataset a également été supprimé. Reportez vous à la section 
+[Chargement du dataset dans votre Sandbox](./courses/04_scoping_data_prep_label.md#procédure-de-sauvegarde) 
+pour le recharger.
+
 - Rejouez vos dernières github actions pour régénérer les artefacts de build et de déploiement.
 
 ![208.png](./courses/img/208.png)
 ![209.png](./courses/img/209.png)
 ![210.png](./courses/img/210.png)
 ![211.png](./courses/img/211.png)
+

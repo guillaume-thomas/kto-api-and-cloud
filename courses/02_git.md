@@ -94,8 +94,10 @@ lequel git est préalablement installé.
 ## Les commandes de base
 
 Connecter son projet à un repository distant :
-- `git config --global user.name "votre nom"` (configurer votre nom d'utilisateur)
-- `git config --global user.email "votre email"` (configurer votre email)
+- `git config --global user.name "votre nom"` (configurer votre nom d'utilisateur, retirer le --global si vous souhaitez
+  le configurer uniquement pour le repository courant)
+- `git config --global user.email "votre email"` (configurer votre email, retirer le --global si vous souhaitez
+  le configurer uniquement pour le repository courant)
 - `git init` (initialiser un repository git dans le dossier courant)
 - `git remote add origin <adresse_du_repo_distant>` (connecter le repository local au repository distant)
 
@@ -245,7 +247,7 @@ Your username on Quay.io (to push container images). (your-quay-username): kto_g
 
 ![031.png](img/031.png)
 
-**ATTENTION, comme vous pouvez le voir dans l'exemple ci-dessus, mon nom d'utilisateur Quay.io est différent de mon
+> ⚠️ **Attention** : **Comme vous pouvez le voir dans l'exemple ci-dessus, mon nom d'utilisateur Quay.io est différent de mon
 nom d'utilisateur OpenShift. Assurez-vous de bien utiliser vos deux noms d'utilisateur respectifs.**
 
 Votre projet est maintenant créé. Nous allons maintenant le configurer pour qu'il puisse être versionné avec git.
@@ -322,14 +324,18 @@ Prenons maintenant quelques instants pour observer la structure du projet. Vous 
 - Très bien, nous allons maintenant initialiser git dans ce dossier et le connecter à notre repository GitHub distant. 
 Commençons par configurer git avec votre nom et email. Définissons le nom de la branche par défaut.
 ```bash
-git config --global init.defaultBranch main
+git config init.defaultBranch main
 ```
 ```bash
-git config --global user.email "<your_email>"
+git config user.email "<your_email>"
 ```
 ```bash
-git config --global user.name "<your_name>"
+git config user.name "<your_name>"
 ```
+```bash
+git config core.editor "vim"
+```
+
 - Initialisez git dans le dossier courant
 ```bash
 git init
@@ -468,6 +474,9 @@ git push -u origin feat/exercice-branche
 ![092.png](img/092.png)
 ![093.png](img/093.png)
 
+> ⚠️ **Évaluation** : **Partagez par mail à votre professeur que vous avez terminé cette partie. Indiquez bien également
+> le lien vers votre repo github.**
+
 ## Comment revenir en arrière ?
 
 Plusieurs commandes : 
@@ -556,7 +565,8 @@ git pull --rebase
 
 ![106.png](img/106.png)
 
-- **Partagez par mail un screenshot de votre `git log` (évaluation). Indiquez bien également le lien vers votre repo github.**
+> ⚠️ **Évaluation** : **Partagez par mail un screenshot de votre `git log`. Indiquez bien également 
+> le lien vers votre repo github.**
 
 ## L'Open Source
 

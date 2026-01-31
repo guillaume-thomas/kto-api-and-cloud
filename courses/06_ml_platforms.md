@@ -1,19 +1,41 @@
 # 6. Les plateformes de ML sur le Cloud
 
-Dans cette partie, nous allons étudier comment dé porter l'entraînement de notre modèle sur le Cloud. Le but étant de 
+Dans cette partie, nous allons étudier comment déporter l'entraînement de notre modèle sur le Cloud. Le but étant de 
 bénéficier des avantages de ce dernier dans le domaine du ML. 
 
 Avant de commencer, afin que tout le monde parte du même point, vérifiez que vous n'avez aucune modification en
 cours sur votre working directory avec `git status`.
 Si c'est le cas, vérifiez que vous avez bien sauvegardé votre travail lors de l'étape précédente pour ne pas perdre
 votre travail.
-Sollicitez le professeur, car il est possible que votre contrôle continue en soit affecté.
+> ⚠️ **Attention** : En cas de doute, sollicitez le professeur.
+> Votre contrôle continu pourrait être impacté.
 
-Sinon, annulez toutes vos modifications avec `git reset --hard HEAD`. Supprimez potentiellement les fichiers
-non indexés.
-Changez maintenant de branche avec `git switch step03`.
-Créez désormais une branche avec votre nom : `git switch -c votrenom/step03`
 
+Surtout, n'oubliez pas de commiter et pusher votre travail avant de continuer ! Pour rappel, les commandes sont : 
+```bash
+git add .
+git commit -m "your message"
+git push origin main
+```
+
+Dans ce module, vous allez :
+- Découvrir les plateformes ML du marché (Databricks, Azure ML, OpenShift Data Science)
+- Déployer votre propre plateforme MLflow dans Kubernetes
+- Exécuter vos entraînements dans le Cloud via OpenShift
+
+**Prérequis** : Avoir terminé le module 5 (entraînement en notebook)
+
+
+Si nous revenons à notre sujet, nous allons voir dans cette partie comment utiliser des plateformes de ML dans le Cloud.
+Nous nous trouvons toujours dans l'étape d'entraînement de notre modèle. Jusque-là, nous avons toujours travaillé en local,
+c'est-à-dire que tout le traitement s'effectuait sur notre machine. Cela est très bien pour des petits jeux de données non critiques
+et des modèles simples. Mais dès que l'on souhaite travailler sur des données plus volumineuses, ou entraîner des
+modèles plus complexes, notre machine atteint rapidement ses limites. C'est là que le Cloud entre en jeu.
+
+Dans la timeline MLOps, nous nous situons toujours dans la phase de **Modélisation**. Nous allons voir comment 
+utiliser des plateformes de ML dans le Cloud pour entraîner nos modèles de manière plus efficace et plus rapide.
+
+![MLOps_Timeline.png](00_materials/MLOps_Timeline.png)
 
 ## Présentation du cloud et ses avantages
 
