@@ -25,6 +25,10 @@ Dans ce module, vous allez :
 
 **Prérequis** : Avoir terminé le module 5 (entraînement en notebook)
 
+Avant de commencer, vérifiez que votre environnement de travail est bien opérationnel en
+utilisant [Dailyclean](./04_scoping_data_prep_label.md#présentation-de-dailyclean-et-comment-démarrer-kto-mlflow).
+
+Lancez également votre Devspace s'il est éteint. Vous trouverez comment faire dans les [parties précédentes](./04_scoping_data_prep_label.md#installation-de-kto-mlflow-et-présentation-de-minio).
 
 Si nous revenons à notre sujet, nous allons voir dans cette partie comment utiliser des plateformes de ML dans le Cloud.
 Nous nous trouvons toujours dans l'étape d'entraînement de notre modèle. Jusque-là, nous avons toujours travaillé en local,
@@ -33,7 +37,7 @@ et des modèles simples. Mais dès que l'on souhaite travailler sur des données
 modèles plus complexes, notre machine atteint rapidement ses limites. C'est là que le Cloud entre en jeu.
 
 Dans la timeline MLOps, nous nous situons toujours dans la phase de **Modélisation**. Nous allons voir comment 
-utiliser des plateformes de ML dans le Cloud pour entraîner nos modèles de manière plus efficace et plus rapide.
+utiliser des plateformes de ML dans le Cloud pour entraîner nos modèles de manière plus efficace, plus rapide et plus sûr.
 
 ![MLOps_Timeline.png](00_materials/MLOps_Timeline.png)
 
@@ -362,6 +366,8 @@ dans un run mlflow, pour être compris et maintenu dans le temps.
 Nous allons donc enregistrer tous les fichiers en entrées et en sorties de chaque étape, le rapport y data profiling 
 et également le model. Tout cela dans notre run mlflow.
 
+Vous trouverez la documentation de mlflow pour logger des informations [ici](https://mlflow.org/docs/latest/ml/tracking/tracking-api/).
+
 Nous allons également en profiter pour utiliser les fichiers et dossiers temporaires, afin d'éviter d'écrire nos fichiers dans le répertoire `dist`
 de notre projet, ce qui n'est pas une bonne pratique. Cela ralentit vos traitements et pollue votre espace de travail.
 Dans ce cas précis, cela peut poser un problème de dataleakage, car les fichiers restent sur votre disque dur.
@@ -663,354 +669,101 @@ Vous devriez voir que tous les tests passent correctement, y compris ceux que j'
 
 ![237.png](./img/237.png)
 
-### Exécution dans un environnement Docker
+> ⚠️ **Évaluation** : **Veuillez prendre une capture d'écran comme celle ci-dessus et veuillez la transmettre par mail
+> à votre professeur.**
 
-Créez également un fichier `Dockerfile` dans le même répertoire : 
+### Exécution dans un environnement Docker 
+
+Ce qu'il est intéressant avec MLflow, c'est que nous pouvons exécuter nos projets dans des environnements isolés.
+Cela permet de garantir la reproductibilité de nos expériences, mais aussi de pouvoir exécuter nos projets dans
+des environnements différents, comme dans le Cloud.
+
+Ce que nous venons de faire, c'est d'exécuter notre projet mlflow en local, dans notre Devspace. Je vous propose
+maintenant d'exécuter ce même projet dans un environnement Docker. Vous verrez que c'est très simple à mettre en place et
+vous pourrez ensuite réutiliser cette approche pour exécuter vos projets dans le Cloud, par exemple dans notre plateforme
+kto-mlflow (ce que nous ferons également dans ce cours).
+
+Pour cela, nous allons créer notre environnement Docker. Identifiez le fichier Dockerfile `./k8s/experiment/Dockerfile`.
+Il est vide pour l'instant et est largement commenté.
+
+![238.png](./img/238.png)
+
+Nous détaillerons plus tard comment fonctionne Docker, mais pour l'instant, contentez-vous de copier le contenu suivant dans 
+votre Dockerfile :
+
 ```Dockerfile
-FROM python:3.11-slim
+FROM python:3.13-slim
 
-ARG MLFLOW_S3_ENDPOINT_URL
+# Arguments de build pour les variables d'environnement
+ARG MLFLOW_S3_ENDPOINT_URL 
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
 
-ENV MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL}
-ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+# Définition des variables d'environnement pour l'accès à S3 via MLflow
+ENV MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL} \
+    AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
-COPY --chown=${USER} cats_dogs_other/train ./cats_dogs_other/train
-COPY --chown=${USER} cats_dogs_other/requirements.txt ./cats_dogs_other/requirements.txt
+# Réduction des logs de GitPython
+ENV GIT_PYTHON_REFRESH=quiet
 
-RUN chmod -R 777 ./cats_dogs_other
-RUN pip install -r /cats_dogs_other/requirements.txt
-```
+# Définition du répertoire home pour les fichiers temporaires
+ENV HOME=/tmp
 
-Vous devriez avoir ceci :
+# Définition du répertoire de travail dans le conteneur
+WORKDIR /app
 
-![mlproject.png](00_materials/06_ml_platforms/mlproject.png)
+# Installation de UV (un gestionnaire de dépendances)
+RUN pip install --no-cache-dir uv
+# Copie des fichiers nécessaires pour installer les dépendances
+COPY pyproject.toml uv.lock README.md ./
+# Copie du code source nécessaire à l'exécution de l'expérience
+COPY ./src/titanic/training ./src/titanic/training
 
-Créez l'image docker avec la commande (n'oubliez pas de remettre les variables d'environnement) : 
-```bash
-docker build -f ./cats_dogs_other/train/Dockerfile -t local/cats-dogs-other-train --build-arg MLFLOW_S3_ENDPOINT_URL=$MLFLOW_S3_ENDPOINT_URL --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY .
-```
-
-Notez que l'on nomme ici l'image `local/cats-dogs-other-train`. Ceci est raccord avec ce que l'on a mis dans le fichier
-`MLproject`. 
-
-Enfin, jouez la commande suivante : 
-```bash
-mlflow run ./cats_dogs_other/train --experiment-name cats-dogs-other
-```
-
-L'expérience est désormais enregistrée dans mlflow et exécutez dans un environnement Docker. 
-Vous pouvez lancer un server mlflow local avec la commande suivante :
-```bash
-mlflow server --host 127.0.0.1 --port 8080
-```
-
-Rendez-vous dans l'onglet PORTS pour visiter la page web écoutant le port 8080.
-
-![open_local_mlflow_server.png](00_materials/06_ml_platforms/open_local_mlflow_server.png)
-
-Constatez que vous avez bien votre expérience crée, ainsi que votre run local. 
-
-![run_in_local_mlflow.png](00_materials/06_ml_platforms/run_in_local_mlflow.png)
-
-Notez également qu'il n'y a pas beaucoup d'informations dans votre run à part les paramètres d'entrée utilisés.
-
-![run_local_is_empty.png](00_materials/06_ml_platforms/run_local_is_empty.png)
-
-Éteignez votre serveur en faisant le raccourci CTRL+C dans votre Terminal.
-
-![killing_local_mlflow.png](00_materials/06_ml_platforms/killing_local_mlflow.png)
-
-
-
-Reconstruisez l'image docker avec la commande :
-```bash
-docker build -f ./cats_dogs_other/train/Dockerfile -t local/cats-dogs-other-train --build-arg MLFLOW_S3_ENDPOINT_URL=$MLFLOW_S3_ENDPOINT_URL --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY .
-```
-
-Relancez un nouveau run mlflow : 
-```bash
-mlflow run ./cats_dogs_other/train --experiment-name cats-dogs-other
-```
-
-Relancez le server mlflow et constatez les différences : 
-```bash
-mlflow server --host 127.0.0.1 --port 8080
-```
-
-*Attention ! Vous venez de modifier votre code et ce dernier est testé unitairement ! Prenez l'habitude d'exécuter vos
-tests unitaires régulièrement pour vérifier que rien n'a été cassé. Comme vous pouvez le constater, mlflow ne modifie
-en rien la bonne exécution de nos tests, ce qui est une excellente nouvelle !*
-
-Notez que l'accès à certains Artifacts ne fonctionnent malheureusement pas. C'est un soucis de droits d'accès sur le système
-de fichier de codespace, car l'exécution en local de mlflow créé les éléments directement sur votre disque. Pour corriger ce 
-problème, vous pouvez utiliser la commande suivante : 
-```bash
-sudo chmod -R 777 mlruns/
-```
-
-Notez que désormais, nous avons plus d'information dans nos runs de train ! Merci autolog ! Mais il va nous manquer des choses !
-Par exemple, pas trace de nos plots ! Ni du split qui a été effectué, pas d'info sur les datasets ! 
-
-Nous allons donc ajouter des logs mlflow supplémentaires !
-
-Prenons les choses dans l'ordre et occupons-nous d'abord de l'extraction de nos annotations.
-Dans notre script `train/steps/extraction.py`, nous allons enregistrer le dictionnaire `extract` créé, car il récapitule
-l'intégralité de nos annotations. Pour ce faire, nous pouvons utiliser la méthode [log_dict](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_dict)
-de MLflow : 
-```python
-import mlflow.keras
-mlflow.log_dict(extract, "annotations/extract.json")
-```
-
-Votre script devrait ressembler à ceci : 
-```python
-import json
-from pathlib import Path
-from typing import Any
-
-import mlflow.keras
-
-from .s3_wrapper import IS3ClientWrapper
-
-
-def extraction_from_annotation_file(bucket_name: str, s3_path: str, filename: str, s3_client: IS3ClientWrapper) -> tuple[dict[Any, Any], set[Any]]:
-    Path(filename).parent.mkdir(parents=True, exist_ok=True)
-    s3_client.download_file(bucket_name, s3_path, filename)
-
-    extract = {}
-    classes = set()
-    with open(filename) as file:
-        annotations = json.load(file)["annotations"]
-        for annotation in annotations:
-            label = annotation["annotation"]["label"]
-            extract[annotation["fileName"]] = label
-            classes.add(label)
-    mlflow.log_dict(extract, "annotations/extract.json")
-    return extract, classes
+# Installation des dépendances nécessaires à l'entrainement 
+# définies dans le groupe training dans pyproject.toml
+RUN uv sync -n --group training
 
 ```
 
-Maintenant, sauvegardons le résultat du split, avec la même méthode `log_dict`. Ce qui va nous intéresser, c'est de 
-garder une trace des dictionnaires créées dans notre fonction. Notre fichier `train/steps/split.py`
-devrait ressembler à ceci : 
+Prenons le temps de le commenter ensemble.
 
-```python
-import random
-from pathlib import Path
+Maintenant, nous allons demander à MLflow d'utiliser ce Dockerfile pour exécuter notre projet. Pour cela, nous allons modifier
+le fichier `MLproject` que nous avons vu précédemment, en y ajoutant une section `docker_env`. Pour le faire correctement, 
+vous aurez besoin de votre identifiant quay.io. Pour le retrouver, connectez-vous sur [Quay.io](https://quay.io/), 
+cliquez sur votre profil en haut à droite, puis sur Account Settings. Votre identifiant se trouve en haut de la page.
 
-import mlflow.keras
+![239.png](./img/239.png)
+![240.png](./img/240.png)
+![241.png](./img/241.png)
+![242.png](./img/242.png)
 
-from .s3_wrapper import IS3ClientWrapper
+Modifiez donc le fichier `./src/titanic/training/MLproject` pour qu'il ressemble à ceci :
+```yaml
+name: kto-titanic
 
+docker_env:
+  image: quay.io/VOTRE_IDENTIFIANT_QUAY.IO/titanic/experiment # <--- Remplacez par votre identifiant quay.io
+  
+entry_points:
 
-def random_split_train_evaluate_test_from_extraction(extract: dict,
-                                                     classes: set,
-                                                     split_ratio_train: float,
-                                                     split_ratio_evaluate: float,
-                                                     split_ratio_test: float,
-                                                     train_dir: str,
-                                                     evaluate_dir: str,
-                                                     test_dir: str,
-                                                     bucket_name: str,
-                                                     s3_path: str,
-                                                     s3_client: IS3ClientWrapper):
-    if split_ratio_train + split_ratio_evaluate + split_ratio_test != 1:
-        raise Exception("sum of ratio must be equal to 1")
-
-    keys_list = list(extract.keys())  # shuffle() wants a list
-    random.shuffle(keys_list)  # randomize the order of the keys
-
-    nkeys_train = int(split_ratio_train * len(keys_list))  # how many keys does split ratio train% equal
-    keys_train = keys_list[:nkeys_train]
-    keys_evaluate_and_test = keys_list[nkeys_train:]
-
-    split_ratio_evaluate_and_test = split_ratio_evaluate + split_ratio_test
-    nkeys_evaluate = int((split_ratio_evaluate / split_ratio_evaluate_and_test) * len(keys_evaluate_and_test))
-    keys_evaluate = keys_evaluate_and_test[:nkeys_evaluate]
-    keys_test = keys_evaluate_and_test[nkeys_evaluate:]
-
-    extract_train = {k: extract[k] for k in keys_train}
-    extract_evaluate = {k: extract[k] for k in keys_evaluate}
-    extract_test = {k: extract[k] for k in keys_test}
-
-    # create directories
-    for existing_class in classes:
-        Path(train_dir + "/" + existing_class).mkdir(parents=True, exist_ok=True)
-        Path(evaluate_dir + "/" + existing_class).mkdir(parents=True, exist_ok=True)
-        Path(test_dir + "/" + existing_class).mkdir(parents=True, exist_ok=True)
-
-    # add files in directories
-    download_files(extract_train, train_dir, bucket_name, s3_path, s3_client)
-    download_files(extract_evaluate, evaluate_dir, bucket_name, s3_path, s3_client)
-    download_files(extract_test, test_dir, bucket_name, s3_path, s3_client)
-
-    mlflow.log_dict(extract_train, "annotations/split_train.json")
-    mlflow.log_dict(extract_evaluate, "annotations/split_evaluate.json")
-    mlflow.log_dict(extract_test, "annotations/split_test.json")
-
-
-def download_files(extract: dict, directory: str, bucket_name: str, s3_path: str, s3_client: IS3ClientWrapper):
-    for key, value in extract.items():
-        s3_client.download_file(bucket_name, s3_path + key, directory + "/" + value + "/" + key)
+  main:
+    parameters:
+      path: str
+      n_estimators: {type: int, default: 100}
+      max_depth: {type: int, default: 10}
+      random_state: {type: int, default: 42}
+    command: "uv -n run --no-sync -m titanic.training.main --input_data_path {path} --n_estimators {n_estimators} --max_depth {max_depth} --random_state {random_state}"
 
 ```
 
-Maintenant, sauvegardons notre modèle dans le format attendu, ainsi que nos jolis graphiques. Pour ce faire, nous allons
-utiliser les méthodes [log_model](https://www.mlflow.org/docs/1.20.2/python_api/mlflow.keras.html#mlflow.keras.log_model) 
-et [log_artifact](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifact) : 
-```python
-import mlflow.keras
-#...
-model.save(model_path)
-mlflow.keras.log_model(model, "model")
-#...
-# save plot to file
-pyplot.savefig(plot_filepath)
-mlflow.log_artifact(plot_filepath)
-```
+Vous avez terminé toute la partie de code ! Bravo !
+Il ne reste désormais que de la configuration pour faire fonctionner tout cela dans kto-mlflow.
+Accrochez-vous, vous y êtes presque ! :-)
 
-Votre script `train/steps/train_and_evaluate.py` devrait donc ressembler à ceci : 
-```python
-from pathlib import Path
+> ⚠️ **Évaluation** : **Veuillez committer et pusher vos modifications dans votre dépôt GitHub. Ce sera pris en compte dans votre évaluation.**
 
-from keras import Model
-from keras.src.applications.vgg16 import VGG16
-from keras.src.callbacks import History
-from keras.src.layers import Dropout, Flatten, Dense
-from keras.src.losses import SparseCategoricalCrossentropy
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from matplotlib import pyplot
-import mlflow.keras
-
-
-def train_and_evaluate_model(train_dir: str,
-                             evaluate_dir: str,
-                             test_dir: str,
-                             model_dir: str,
-                             model_path: str,
-                             plot_filepath: str,
-                             batch_size: int,
-                             epochs: int):
-    model = define_model()
-
-    # create data generator
-    datagen = ImageDataGenerator(featurewise_center=True)
-    # specify imagenet mean values for centering
-    datagen.mean = [123.68, 116.779, 103.939]
-    # prepare iterator
-    train_it = datagen.flow_from_directory(
-        train_dir,
-        class_mode="binary",
-        batch_size=batch_size,
-        target_size=(224, 224)
-    )
-    validation_it = datagen.flow_from_directory(
-        evaluate_dir,
-        class_mode="binary",
-        batch_size=batch_size,
-        target_size=(224, 224)
-    )
-    # fit model
-    history = model.fit(
-        train_it,
-        steps_per_epoch=len(train_it),
-        validation_data=validation_it,
-        validation_steps=len(validation_it),
-        epochs=epochs,
-        verbose=1,
-    )
-    # test model
-    evaluate_it = datagen.flow_from_directory(
-        test_dir,
-        class_mode="binary",
-        batch_size=batch_size,
-        target_size=(224, 224)
-    )
-    _, acc = model.evaluate(evaluate_it, steps=len(evaluate_it), verbose=1)
-    evaluate_accuracy_percentage = acc * 100.0
-    print("> %.3f" % evaluate_accuracy_percentage)
-
-    Path(model_dir).mkdir(parents=True, exist_ok=True)
-
-    create_history_plots(history, plot_filepath)
-
-    model.save(model_path)
-    mlflow.keras.log_model(model, "model")
-
-
-def define_model() -> Model:
-    model = VGG16(include_top=False, input_shape=(224, 224, 3))
-    # mark loaded layers as not trainable
-    for layer in model.layers:
-        layer.trainable = False
-    # add new classifier layers
-    output = model.layers[-1].output
-    drop1 = Dropout(0.2)(output)
-    flat1 = Flatten()(drop1)
-    class1 = Dense(64, activation="relu", kernel_initializer="he_uniform")(flat1)
-    output = Dense(3, activation="sigmoid")(class1)
-    # define new model
-    model = Model(inputs=model.inputs, outputs=output)
-    # compile model
-    model.compile(optimizer='adam',
-                  loss=SparseCategoricalCrossentropy(from_logits=True),
-                  metrics=['accuracy'])
-    return model
-
-
-def create_history_plots(history: History, plot_filepath: str):
-    # plot loss
-    pyplot.subplot(211)
-    pyplot.title("Cross Entropy Loss")
-    pyplot.plot(history.history["loss"], color="blue", label="train")
-    pyplot.plot(history.history["val_loss"], color="orange", label="test")
-    # plot accuracy
-    pyplot.subplot(212)
-    pyplot.title("Classification Accuracy")
-    pyplot.plot(history.history["accuracy"], color="blue", label="train")
-    pyplot.plot(history.history["val_accuracy"], color="orange", label="test")
-    # save plot to file
-    pyplot.savefig(plot_filepath)
-    mlflow.log_artifact(plot_filepath)
-    
-    pyplot.close()
-
-```
-
-Notez que dans ces conditions, autolog continue de générer le modèle dans son format par défaut. Pour ne pas gâcher notre
-espace disque, nous pouvons demander à autolog d'ignorer la sauvegarde du modèle : 
-```python
-mlflow.autolog(log_models=False)
-```
-
-Faites-le dans votre projet et relancez un run en rebuildant votre image et en utilisant la commande mlflow.
-Constatez les changements ! Bravo ! Vous avez terminé cette partie ! **Créez un nouveau commit et poussez vos
-modifications sur votre branche. (évaluations)**
-
-Maintenant, lançons nos runs dans le **Cloud** !!!
-
-### Un peu de clean avant
-
-Faites attention, construire des images Docker et exécuter des runs en lcal, occupent de l'espace disque sur votre Codespaces.
-Il est peut-être temps de faire un brin de ménage.
-Débarrassez-vous des répertoires `dist` et `mlruns` qui se trouvent dans votre Explorateur de fichier.
-
-![cleaning_folders.png](00_materials/06_ml_platforms/cleaning_folders.png)
-
-Si certains fichiers ne veulent pas se supprimer, utilisez cette méthode radicale (à utiliser prudemment) :
-```bash
-sudo rm -rf mlruns/
-```
-
-Il faut également néttoyer vos images docker en trop. Utilisez la commande suivante :
-```bash
-docker system prune
-```
-
-### Exécution dans kto-mlflow
+### Exécution dans kto-mlflow (Environnement Cloud Kubernetes)
 
 Maintenant que nous avons fait fonctionner notre projet MLflow en local, faisons en sorte de le faire tourner dans
 kto-mlflow, soit dans Kubernetes. Retenez pour l'instant que Kubernetes est, ce que l'on appelle, un orchestrateur
@@ -1040,76 +793,69 @@ Il faut maintenant que nous créions un nouveau repository. Cliquez sur ce bouto
 
 ![create_repo.png](00_materials/06_ml_platforms/create_repo.png)
 
-Renseignez le nom de votre repo : `kto/train/cats-dogs-other-2023-2024`. Puis, surtout, veuillez faire en sorte que ce 
+Renseignez le nom de votre repo : `titanic/experiment`. Puis, surtout, veuillez faire en sorte que ce 
 repository soit Public (cela me permettra d'y accéder et cela fait également partie des limitations de quay.io gratuit).
 Enfin, cliquez sur Create Public Repository : 
 
-![create_repo2.png](00_materials/06_ml_platforms/create_repo2.png)
+![243.png](./img/243.png)
 
 Vous devriez désormais arriver sur cette page ! Bravo ! Vous avez créé votre espace de stockage en ligne !
 
-![repo_created.png](00_materials/06_ml_platforms/repo_created.png)
+![244.png](./img/244.png)
 
 Maintenant, il faut que l'on pousse notre image sur Quay. Pour ce faire, il faudra d'abord connecter votre client docker
-de Codespace sur votre compte quay. Pour cela, nous allons créer un compte de type "Robot". Ces types de compte seront 
-très utiles pour la suite de ce cours. Nous reviendrons dessus plus tard. Voyons désormais comment créer un compte !
+ sur votre compte quay. Pour cela, nous allons créer un compte de type "Robot". Ces types de compte sont faits pour
+les connexions automatisées, comme celles que nous allons faire avec MLflow. Elles évitent d'utiliser votre compte personnel
+et permettent de mieux gérer les accès. Voyons désormais comment créer un compte Robot !
 
-Cliquez sur le menu en haut à droite et sélectionnez Account Settings : 
+Cliquez sur la roue crantée à gauche de la page de votre repository, pour accéder à ses paramètres : 
 
-![account_settings_quay.png](00_materials/06_ml_platforms/account_settings_quay.png)
+![245.png](./img/245.png)
 
-Cliquez ensuite sur le logo en forme de robot à gauche et cliquez sur Create Robot Account : 
+En haut de cette page, vous trouverez une section User and Robot Permissions. En bas de cette section, se trouve
+une liste déroulante. Cliquez sur la flèche puis sélectionnez Create Robot Account.
 
-![create_robot_account.png](00_materials/06_ml_platforms/create_robot_account.png)
+![246.png](./img/246.png)
 
-Saisissez le nom du robot, par exemple `mlflow_train_2023_2024` et cliquez sur Create Robot Account : 
+Appelez votre robot `titanic` puis cliquez sur Create Robot Account.
 
-![create_robot_account2.png](00_materials/06_ml_platforms/create_robot_account2.png)
+![247.png](./img/247.png)
 
-Maintenant, nous devons autoriser ce compte pour notre repository. Retournez dans le repository 
-`kto/train/cats-dogs-other-2023-2024`, puis sélectionnez la roue crantée et ajoutez votre compte robot comme indiqué 
-ci-dessous :
+Vous devriez désormais voir votre robot dans la liste des utilisateurs. Changez ses permissions pour qu'il ait
+le droit de Push et Pull sur votre repository. Pour cela, cliquez sur la liste déroulante où est inscrit Read et 
+sélectionnez Admin.
 
-![add_robot_to_repo.png](00_materials/06_ml_platforms/add_robot_to_repo.png)
+![248.png](./img/248.png)
 
-Mettez bien les droits admins à votre robot et ajoutez la permission :
+Puis cliquez sur Add Permission.
 
-![set_robot_admin_and_add.png](00_materials/06_ml_platforms/set_robot_admin_and_add.png)
+![249.png](./img/249.png)
 
-Voici ce que vous devriez obtenir : 
+Et voilà ! Votre repository est prêt à recevoir des images docker avec un compte Robot !
 
-![set_robot_admin_and_add.png](00_materials/06_ml_platforms/set_robot_admin_and_add.png)
+![250.png](./img/250.png)
 
-Maintenant, retournez dans le menu des comptes robot et sélectionnez votre compte créé précédemment :
+Derniers détails de configuration, pour permettre à mlflow d'exécuter notre projet dans Kubernetes, il faut avoir
+un template de Job Kubernetes et un fichier de configuration Kubernetes pour mlflow.
 
-![return_to_robot_account.png](00_materials/06_ml_platforms/return_to_robot_account.png)
-
-Dans la popup qui vient de s'ouvrir, sélectionnez Docker puis copiez la commande :
-
-![copy_docker_login.png](00_materials/06_ml_platforms/copy_docker_login.png)
-
-Jouez cette commande dans votre Terminal de Codespace et vous serez prêt à envoyer votre image !
-
-![command_paste.png](00_materials/06_ml_platforms/command_paste.png)
-
-Maintenant, il vous faut ajouter deux nouveaux fichiers dans votre projet, dans le répertoire `train` :
-- `kubernetes_config.json` dans lequel vous mettrez ce contenu. Veillez-bien à mettre le nom de votre propre image dans quay
+Vous les trouverez dans le répertoire `./k8s/experiment/`. Il s'agit de deux fichiers :
+- `kubernetes_config.json` dans lequel vous trouverez ce contenu. Notez la présence du nom de votre propre image dans quay
 à la ligne `repository-uri` :
 ```json
 {
   "kube-context": "openshift-context",
-  "kube-job-template-path": "kubernetes_job_template.yaml",
-  "repository-uri": "quay.io/gthomas59800/kto/train/cats-dogs-other-2023-2024"
+  "kube-job-template-path": "./k8s/experiment/kubernetes_job_template.yaml",
+  "repository-uri": "quay.io/VOTREQUAY/titanic/experiment"
 }
 ```
-- `kubernetes_job_template.yaml` dans lequel vous mettrez ce contenu. Veillez de nouveau à renseigner le nom de votre "namespace"
+- `kubernetes_job_template.yaml` dans lequel vous trouverez ce contenu. Notez la présence du nom de votre "namespace"
 dans OpenShift à la 5eme ligne, au niveau de `namespace` :
 ```yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: "{replaced with MLflow Project name}"
-  namespace: METTEZ_ICI_VOTRE_NAMESPACE
+  namespace: VOTREUSEROPENSHIFT-dev
 spec:
   ttlSecondsAfterFinished: 100
   backoffLimit: 0
@@ -1121,160 +867,39 @@ spec:
           command: ["{replaced with MLflow Project entry point command}"]
           resources:
             limits:
-              cpu: 1300m
+              cpu: 600m
               memory: 4000Mi
             requests:
-              cpu: 1300m
+              cpu: 600m
               memory: 4000Mi
       restartPolicy: Never
 ```
-Vous trouverez cette information en vous connectant sur votre OpenShift : 
+Vous n'avez rien à faire de plus, ces fichiers ont déjà été créés et complétés pour vous par le cookiecutter.
 
-![open_sandbox.png](00_materials/06_ml_platforms/open_sandbox.png)
-![open_sandbox2.png](00_materials/06_ml_platforms/open_sandbox2.png)
-![open_sandbox3.png](00_materials/06_ml_platforms/open_sandbox3.png)
-![get_namespace.png](00_materials/06_ml_platforms/get_namespace.png)
-
-Vous devriez avoir ceci : 
-
-![new_files.png](00_materials/06_ml_platforms/new_files.png)
-
-Maintenant, dans votre fichier train/MLproject, changez ligne 4 le nom de l'image local/cats-dogs-other-train, par
-le nom de votre image sur quay. Voici un exmeple : 
+Maintenant, revenons à votre fichier MLproject. Pour rappel, il ressemble à ceci : 
 ```yaml
-name: cats-dogs-other
+name: kto-titanic
 
 docker_env:
-  image: quay.io/gthomas59800/kto/train/cats-dogs-other-2023-2024
+  image: quay.io/VOTRE_IDENTIFIANT_QUAY.IO/titanic/experiment # <--- Remplacez par votre identifiant quay.io
 
 entry_points:
+
   main:
     parameters:
-        split_ratio_train: {type: float, default: 0.8}
-        split_ratio_evaluate: {type: float, default: 0.1}
-        split_ratio_test: {type: float, default: 0.1}
-        batch_size: {type: int, default: 64}
-        epochs: {type: int, default: 4}
-        working_dir: {type: str, default: ./cats_dogs_other/train/dist}
-        model_filename: {type: str, default: final_model.keras}
-        model_plot_filename: {type: str, default: model_plot.png}
-    command: "python ./cats_dogs_other/train/train.py --split_ratio_train={split_ratio_train} --split_ratio_evaluate={split_ratio_evaluate} --split_ratio_test={split_ratio_test} --batch_size={batch_size} --epochs={epochs} --working_dir={working_dir}"
+      path: str
+      n_estimators: {type: int, default: 100}
+      max_depth: {type: int, default: 10}
+      random_state: {type: int, default: 42}
+    command: "uv -n run --no-sync -m titanic.training.main --input_data_path {path} --n_estimators {n_estimators} --max_depth {max_depth} --random_state {random_state}"
+
 ```
 
-En fait, ici, nous avons indiqué à MLflow le chemin où est stockée notre image. Elle ne sera plus sur votre machine
+En fait, ici, nous avons indiqué à MLflow le chemin du repository où est stockée notre image. Elle ne sera pas sur votre machine
 de développement, mais directement sur Quay.
 
-Maintenant, construisez votre image avec cette commande, n'oubliez pas vos variables d'environnement si elles manquent,
-notez également que le "tag" de votre image a changé pour laisser place à son nom dans quay.io : 
-```bash
-docker build -f ./cats_dogs_other/train/Dockerfile -t quay.io/gthomas59800/kto/train/cats-dogs-other-2023-2024 --build-arg MLFLOW_S3_ENDPOINT_URL=$MLFLOW_S3_ENDPOINT_URL --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY .
-```
 
-Une fois l'image buildée, poussez la dans quay avec la commande suivante :
-```bash
-docker push quay.io/gthomas59800/kto/train/cats-dogs-other-2023-2024
-```
-
-Constatez que votre image est bien dans votre repository quay.io : 
-
-![select_repo.png](00_materials/06_ml_platforms/select_repo.png)
-![image_pushed.png](00_materials/06_ml_platforms/image_pushed.png)
-
-Maintenant, il est temps de réveiller kto-mlflow dans OpenShift. Allumez Dailyclean s'il est éteint dans le menu Workloads => Deployments,
-Sélectionnez `dailyclean-api` et s'il est inscrit `scaled to zero` dans le cercle, cliquez une fois sur la flèche à droite.
-
-![open_dailyclean_deployment.png](00_materials/06_ml_platforms/open_dailyclean_deployment.png)
-![wake_dailyclean.png](00_materials/06_ml_platforms/wake_dailyclean.png)
-
-Rendez-vous sur la page de votre dailyclean (vous trouverez le lien dans Network => Routes) et allumez votre environnement :
-
-![open_dailyclean.png](00_materials/06_ml_platforms/open_dailyclean.png)
-![turn_on.png](00_materials/06_ml_platforms/turn_on.png)
-
-Attendez quelques instants que tout démarre. En attendant, il va falloir ajouter de nouveau quelques variables d'environnement
-pour que tout fonctionne bien ! Grrrr. Bon, certaines sont normalement déjà configurée, mais dans le doute, voici toutes
-les variables nécessaies : 
-```bash
-export KUBE_MLFLOW_TRACKING_URI=http://mlflow-balba-dev.apps.sandbox-m3.666.p1.openshiftapps.com
-export MLFLOW_TRACKING_URI=http://mlflow-balba-dev.apps.sandbox-m3.666.p1.openshiftapps.com
-export MLFLOW_S3_ENDPOINT_URL=http://minio-api-balba-dev.apps.sandbox-m3.666.p1.openshiftapps.com
-export AWS_ACCESS_KEY_ID=minio 
-export AWS_SECRET_ACCESS_KEY=minio123
-```
-Les deux premières variables sont nouvelles, en réalité, ce sont les mêmes, vous trouvez la bonne url ici dans OpenShift :
-
-![get_mlflow_url.png](00_materials/06_ml_platforms/get_mlflow_url.png)
-
-Ce n'est malheureusement pas terminé ... Vous aurez besoin de configurer kubectl, un client kubernetes, qui va permettre
-la création de l'exécution de votre train DANS OpenShift. Voici les commandes à exécuter : 
-```bash
-kubectl config set-cluster openshift-cluster --server=METTEZ_ICI_LADRESSE_DE_VOTRE_OPENSHIFT
-kubectl config set-credentials openshift-credentials --token=METTEZ_ICI_SON_JETON_DAUTHENTIFICATION
-kubectl config set-context openshift-context --cluster=openshift-cluster --user=openshift-credentials --namespace=METTEZ_ICI_LE_NOM_DE_VOTRE_NAMESPACE
-kubectl config use openshift-context
-```
-
-Pour trouver les informations à compléter, le nom de votre namespace et le même que celui précédemment renseigné dans le
-fichier kubernetes_job_template.json. En ce qui concerne l'adresse du cluster et le jeton, vous trouverez les informations
-dans openshift ici, en cliquant sur votre login en haut à droite et sur Copy login command :
-
-![openshift_login.png](00_materials/06_ml_platforms/openshift_login.png)
-
-Il n'est pas impossible que l'on vous demande de vous connecter sur votre SandBox :
-
-![login_sandbox.png](00_materials/06_ml_platforms/login_sandbox.png)
-
-Cliquez sur Display Token
-
-![display_token.png](00_materials/06_ml_platforms/display_token.png)
-
-Récupérez vos informations : 
-
-![copy_token.png](00_materials/06_ml_platforms/copy_token.png)
-
-Vous devriez avoir ce genre de réponses dans votre terminal : 
-
-![kubectl_commands.png](00_materials/06_ml_platforms/kubectl_commands.png)
-
-Ce n'est pas encore complètement terminé, pour que le mode "kubernetes" de mlflow fonctionne, vous devez installer la
-dépendance python suivante:
-```bash
-pip install mlflow[extras]
-```
-
-Et voilà ! Tout est prêt ! Il ne vous reste qu'à jouer la commande mlflow suivante :
-```bash
-cd ./cats_dogs_other/train
-mlflow run . --experiment-name cats-dogs-other --backend kubernetes --backend-config kubernetes_config.json
-cd ../..
-```
-
-Suivez le déroulé de votre commande :-) Après quelques instants, votre job est lancé dans votre OpenShift : 
-
-![mlflow_kto_command.png](00_materials/06_ml_platforms/mlflow_kto_command.png)
-![job_strated.png](00_materials/06_ml_platforms/job_strated.png)
-
-Si vous cliquez sur le job, vous verrez les logs d'exécution de votre train:
-
-![trin_logs_in_openshift.png](00_materials/06_ml_platforms/trin_logs_in_openshift.png)
-
-Une fois l'exécution terminée, votre job s'éteindra tout seul. Normalement, la commande mlflow depuis votre codespace
-devrait ressembler à ceci :
-
-![kto_mlflow_succeded.png](00_materials/06_ml_platforms/kto_mlflow_succeded.png)
-
-Vous pouvez maintenant aller consulter vos runs et vos expériences dans votre mlflow en ligne ! Il vous suffit de 
-chercher son lien dans Networking => Routes => mlflow :
-
-![mlflow_url2.png](00_materials/06_ml_platforms/mlflow_url2.png)
-![run_in_remote_mlflow.png](00_materials/06_ml_platforms/run_in_remote_mlflow.png)
-![run_in_remote_mlflow2.png](00_materials/06_ml_platforms/run_in_remote_mlflow2.png)
-
-**Maintenant, n'oubliez pas de créer un nouveau commit avec vos modifications et de le pousser sur votre branche (évaluations).
-Veuillez également me partager par mail l'adresse de votre dailyclean (évaluations).**
-
-N'oubliez pas d'éteindre votre environnement avec Dailyclean !!!
-
-Bravo ! Cette partie est difficile, vous avez assuré ! Mais, comme vous avez pu le constater, faire tout ceci à la main
+Bravo ! Cette partie est difficile, vous avez assuré ! Mais, comme vous avez pu le constater, nous n'avons pas encore 
+lancé notre projet dans kto-mlflow. En fait, nous allons le faire dans le prochain chapitre, car faire tout ceci à la main
 est très fastidieux. Le refaire à chaque fois va vous donner beaucoup de travail. C'est pourquoi, automatiser tout ce 
-process est INDISPENSABLE ! Voyons maintenant comment faire dans le prochain chapitre !
+process est INDISPENSABLE ! Voyons maintenant comment faire !

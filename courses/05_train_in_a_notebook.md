@@ -815,6 +815,11 @@ Comme vous pouvez le constater, le test échoue. C'est normal, car le code n'est
 
 ![217.png](./img/217.png)
 
+Petit détail en passant, notez que nous utilisons `pytest` pour exécuter nos tests unitaires. Pytest est un framework de test
+populaire en Python qui permet d'écrire des tests unitaires de manière simple et efficace.
+La dépendance pytest est déjà installée dans notre environnement virtuel, car elle a été ajoutée par le cookiecutter dans
+le groupe de dépendance `dev` de votre pyproject.toml. Vous pouvez consulter ce fichier si vous le souhaitez.
+
 Dans le script de test, mettez le code suivant.
 ```python
 from unittest.mock import patch, Mock
