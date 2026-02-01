@@ -2,6 +2,7 @@
 mlruns/
 mlartifacts/
 mlruns.db
+mlflow.db
 
 # IDE
 .idea

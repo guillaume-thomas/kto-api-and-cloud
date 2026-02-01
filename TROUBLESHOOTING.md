@@ -83,3 +83,11 @@ pour le recharger.
 ![210.png](./courses/img/210.png)
 ![211.png](./courses/img/211.png)
 
+## Dailyclean a visiblement éteint mon environnement tout seul
+
+Il est possible qu'à partir de 18H, votre Sandbox soit mise en veille par le processus Dailyclean.
+Vous pouvez vous en rendre compte si vous voyez un écran similaire à celui-ci depuis votre espace Openshift :
+
+![219.png](./courses/img/219.png)
+
+Pour continuer à travailler, il vous suffit de redémarrer votre kto-mlflow avec Dailyclean. Suivez les étapes décrites [ici](./courses/04_scoping_data_prep_label.md#présentation-de-dailyclean-et-comment-démarrer-kto-mlflow).

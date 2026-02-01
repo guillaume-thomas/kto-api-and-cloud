@@ -72,9 +72,10 @@ chaque partie.
 
 ### Connection à S3
 
-- Dans votre terminal, utilisez uv pour installer cette dépendance, cela installera un client permettant de télécharger les
-  fichiers stockés dans minio (boto3). Nous allons également ajouter ydata-profiling pour faire un rapport de profilage des données
-. Nous allons également installer scikit-learn et pandas qui nous seront utiles par la suite.:
+- Dans votre terminal, utilisez uv pour installer `mlflow[extra]`, cela installera en dépendance transitive 
+un client permettant de télécharger les fichiers stockés dans minio (boto3). Cette dépendance mlflow sera utile également pour la partie suivante.
+Nous allons également ajouter ydata-profiling pour faire un rapport de profilage des données. Nous allons également installer scikit-learn et 
+pandas qui nous seront également utiles par la suite :
 ```bash
 uv add mlflow[extras]==3.8.1 --group training
 uv add ydata-profiling==4.18.0 --group training
@@ -114,8 +115,6 @@ dans `Networking` > `Routes` > `minio-api` et en copiant le lien dans le champ `
 import logging
 import os
 from pathlib import Path
-import tempfile
-import subprocess
 
 import boto3
 import pandas as pd
@@ -413,14 +412,20 @@ Cela sera fait dans une prochaine étape.
 Dernière chose, afin d'éviter de créer les fichiers intermédiaires à la racine de notre projet, nous allons changer le répertoire
 temporaire de ./ vers ./dist. Pour cela, dans chaque script, remplacez les occurrences de `Path("./", ...)` par `Path("./dist/", ...)`.
 
+Il faut également créer le répertoire `dist` à la racine de votre contexte d'exécution. Pour cela, nous allons temporairrement 
+utiliser l'appel de la fonction suivante dans votre script `load_data.py` :
+```python
+from pathlib import Path
+Path("./dist/").mkdir(parents=True, exist_ok=True)
+```
+Nous utiliserons des méthodes plus propres par la suite, notamment en utilisant mlflow, mais également en utilisant les fichiers temporaires.
+
 Voici donc les contenus de :
 - `load_data.py`
 ```python
 import logging
 import os
 from pathlib import Path
-import tempfile
-import subprocess
 
 import boto3
 import pandas as pd
@@ -436,7 +441,8 @@ AWS_SECRET_ACCESS_KEY = "minio123"
 
 def load_data(path: str) -> str:
   logging.warning(f"load_data on path : {path}")
-
+  
+  Path("./dist/").mkdir(parents=True, exist_ok=True)
   local_path = Path("./dist/", "data.csv")
   logging.warning(f"to path : {local_path}")
 
@@ -592,7 +598,8 @@ def validate(model_path: str, x_test_path: str, y_test_path: str) -> None:
   logging.warning(f"medae : {medae}")
   logging.warning(f"feature importance : {feature_importance}")
   # TODO : Dans un second temps, récupérer le model depuis mlflow
-
+  # TODO : Dans un second temps, récupérer les données depuis mlflow
+  # TODO : Dans un second temps, loggez vos métriques dans mlflow
   # TODO : Dans un second temps, enregistrer le model dans mlflow
 
 
@@ -671,11 +678,6 @@ Avant de tester notre code, veillez à ce que votre environnement kto-mlflow soi
 [Dailyclean](./04_scoping_data_prep_label.md#présentation-de-dailyclean-et-comment-démarrer-kto-mlflow). Si vous ne le faites pas,
 vous obtiendrez des erreurs de connexion à minio.
 
-Il faut également créer le répertoire `dist` à la racine de votre projet. Pour cela, dans votre terminal, exécutez la commande suivante :
-```bash
-mkdir /projects/kto-titanic/dist
-```
-
 Testons notre code avec les commandes suivantes : 
 ```bash
 uv run ./src/titanic/training/main.py --input_data_path "all_titanic.csv" --n_estimators 100 --max_depth 10 --random_state 42
@@ -710,8 +712,6 @@ Cela donnerait donc quelque chose comme ceci :
 import logging
 import os
 from pathlib import Path
-import tempfile
-import subprocess
 
 import boto3
 import pandas as pd
@@ -725,6 +725,7 @@ PROFILING_PATH = "profiling_reports"
 def load_data(path: str) -> str:
   logging.warning(f"load_data on path : {path}")
 
+  Path("./dist/").mkdir(parents=True, exist_ok=True)  
   local_path = Path("./dist/", "data.csv")
   logging.warning(f"to path : {local_path}")
 

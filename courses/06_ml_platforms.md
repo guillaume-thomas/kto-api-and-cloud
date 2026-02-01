@@ -176,7 +176,7 @@ code. Vous pouvez décrire votre projet en détail en ajoutant un fichier MLproj
 YAML. Nous pouvons spécifier pour un projet plusieurs propriétés, telles que son nom, ses points d'entrée et 
 son environnement d'exécution.
 
-Les **environnements d’exécution** pour les projets MLflow sont utilisés pour spécifier les dépendances et les packages 
+Les **[environnements d’exécution](https://mlflow.org/docs/latest/ml/projects/#environment)** pour les projets MLflow sont utilisés pour spécifier les dépendances et les packages 
 requis pour exécuter notre code. Les environnements d'exécution possibles pour les projets MLflow sont les suivants :
 - **Environnement virtuel (Virtualenv)** : Les environnements virtuels prennent en charge les packages Python 
 disponibles sur PyPI (nécessite pyenv pour fonctionner).
@@ -186,6 +186,8 @@ disponibles sur PyPI (nécessite pyenv pour fonctionner).
 packages et dépendances nécessaires pour exécuter votre code.
 - **Environnement système** : Les environnements système sont les environnements d'exécution par défaut qui 
 utilisent les packages Python installés sur votre système.
+
+>Pour commencer en local, cette section peut rester vide, l'environnement par défaut sera celui de votre machine.
 
 Vous pouvez exécuter n'importe quel projet à partir d'un URI Git ou d'un répertoire local à l'aide de l'outil en 
 ligne de commande `mlflow run` ou de l'API Python `mlflow.projects.run()`. Ces API permettent également de soumettre 
@@ -199,40 +201,469 @@ ordinateur, complètement isolé, dans lequel nous allons ajouter notre code et 
 
 Allez ! Commençons ! :-)
 
-Ajoutez dans le fichier `requirements.txt` la dépendance mlflow : 
-```
-boto3
-tensorflow 
-matplotlib 
-scipy
-mlflow
-```
-
-Relancez la commande pip install : 
-```bash
-pip install -r ./cats_dogs_other/requirements.txt
-```
-
-Créez un fichier `MLproject` dans le répertoire `train`, dont voici le contenu :
+Identifiez le fichier `MLproject` dans le répertoire `./src/titanic/training/steps`, dont voici le contenu :
 ```yaml
-name: cats-dogs-other
-
-docker_env:
-  image: local/cats-dogs-other-train
+name: kto-titanic
 
 entry_points:
+
   main:
     parameters:
-        split_ratio_train: {type: float, default: 0.8}
-        split_ratio_evaluate: {type: float, default: 0.1}
-        split_ratio_test: {type: float, default: 0.1}
-        batch_size: {type: int, default: 64}
-        epochs: {type: int, default: 4}
-        working_dir: {type: str, default: ./cats_dogs_other/train/dist}
-        model_filename: {type: str, default: final_model.keras}
-        model_plot_filename: {type: str, default: model_plot.png}
-    command: "python ./cats_dogs_other/train/train.py --split_ratio_train={split_ratio_train} --split_ratio_evaluate={split_ratio_evaluate} --split_ratio_test={split_ratio_test} --batch_size={batch_size} --epochs={epochs} --working_dir={working_dir}"
+      path: str
+      n_estimators: {type: int, default: 100}
+      max_depth: {type: int, default: 10}
+      random_state: {type: int, default: 42}
+    command: "uv -n run --no-sync -m titanic.training.main --input_data_path {path} --n_estimators {n_estimators} --max_depth {max_depth} --random_state {random_state}"
 ```
+
+Maintenant, testons ce MLProject en local. Pour ce faire, vous pouvez utiliser le script `./scripts/test_local_mlflow.sh`. Il devrait ressembler à ceci : 
+```bash
+export KUBE_MLFLOW_TRACKING_URI=https://mlflow-$$$$-dev.apps.$$$$$.openshiftapps.com # <--- mettez ici l'url de votre service mlflow
+export MLFLOW_TRACKING_URI=https://mlflow-$$$$-dev.apps.$$$$.openshiftapps.com # <--- mettez ici l'url de votre service mlflow
+export MLFLOW_S3_ENDPOINT_URL=https://minio-api-$$$$-dev.apps.$$$$.openshiftapps.com # <--- mettez ici l'url de votre service minio
+export AWS_ACCESS_KEY_ID=$$$$ # <--- mettez ici le user minio
+export AWS_SECRET_ACCESS_KEY=$$$$ # <--- mettez ici le password minio
+
+uv run mlflow run ./src/titanic/training -e main --env-manager=local -P path=all_titanic.csv --experiment-name kto-titanic
+
+```
+
+> ⚠️ **Attention** : Remplacez les `$` par les informations de votre propre mlflow sur OpenShift, mais aussi avec les informations de connexion de votre service minio.
+
+Pour retrouver l'url de votre mlflow, vous pouvez utiliser la commande suivante dans votre terminal : 
+```bash
+echo https://$(kubectl get route mlflow -o jsonpath='{.spec.host}')
+```
+
+![222.png](./img/222.png)
+
+Vous pouvez également la retrouver dans l'interface web d'OpenShift, dans la section `Networking` > `Routes`, puis 
+en identifiant la ligne `mlflow`.
+L'url se trouve dans la colonne `Location`.
+
+![221.png](./img/221.png)
+
+Vous pouvez désormais exécuter ce script pour lancer votre expérience avec MLflow en local :
+```bash
+source ./scripts/test_local_mlflow.sh
+```
+
+![220.png](./img/220.png)
+
+Comme vous pouvez le voir dans votre Terminal, MLflow a bien exécuté votre projet et a bien enregistré son exécution 
+dans votre server de tracking mlflow distant.
+
+Maintenant, connectez-vous à votre serveur MLflow dans le Cloud (kto-mlflow) en utilisant l'URL que vous aviez retrouvée précédemment.
+Ouvrez un nouvel onglet dans votre navigateur et collez l'URL. Vous devriez voir l'interface web de MLflow.
+
+Comme vous pouvez le constater, une nouvelle expérience `kto-titanic` a été créée, ainsi qu'un run d'entraînement. 
+Cliquez sur l'expérience `kto-titanic` pour voir les détails.
+
+![223.png](./img/223.png)
+
+MlFlow a bien enregistré notre run d'entraînement. Il a également automatiquement détecté que votre projet était un projet de ML.
+Cliquez sur le bouton Confirm. Puis, cliquez sur le run pour voir les détails.
+
+![224.png](./img/224.png)
+
+Vous devriez voir les détails de votre run, mais il n'y a pas beaucoup d'informations pour l'instant.
+
+![225.png](./img/225.png)
+
+> ⚠️ **Évaluation** : **Veuillez prendre une capture d'écran comme celle ci-dessus et veuillez la transmettre par mail
+> à votre professeur.**
+
+###  Ajout de logs mlflow dans notre code
+
+Ajoutons maintenant quelques éléments dans nos run mlflow.
+
+Pour ce faire, nous allons utiliser les capacités de MLflow Tracking, dont voici la [documentation](https://mlflow.org/docs/latest/tracking/tracking-api.html)
+Prenons un peu de temps pour la parcourir !
+
+Nous allons utiliser l'autolog pour commencer. Il s'agit d'une fonctionnalité puissante qui vous permet de logger
+automatiquement les métriques, les paramètres et les modèles sans avoir besoin de déclarer explicitement des
+instructions de journalisation. Tout ce que vous avez à faire est d'appeler `mlflow.autolog()` avant votre code
+d'entraînement. Cette fonctionnalité est disponible pour plusieurs bibliothèques de machine learning telles que
+scikit-learn, TensorFlow, PyTorch, XGBoost, LightGBM ...
+
+Lorsque vous utilisez l'autolog, MLflow enregistre automatiquement diverses informations sur votre exécution, notamment :
+- Les **métriques** : MLflow présélectionne un ensemble de métriques à enregistrer, en fonction du modèle et de la
+  bibliothèque que vous utilisez.
+- Les **paramètres** : les hyperparamètres spécifiés pour l'entraînement, ainsi que les valeurs par défaut fournies
+  par la bibliothèque si elles ne sont pas explicitement définies.
+- La **signature du modèle** : une instance de signature de modèle qui décrit le schéma d'entrée et de sortie du modèle.
+- Les **artefacts** : par exemple, les points de contrôle du modèle.
+- Le **jeu de données** : l'objet de jeu de données utilisé pour l'entraînement, le cas échéant
+  (ne fonctionnera pas dans notre cas, cette fonctionnalité est encore en développement).
+
+
+Pour utiliser l'autolog dans notre projet, ajoutez ces quelques lignes dans `./src/titanic/training/main.py`, pensez également à importer le
+module `mlflow` :
+```python
+import mlflow
+mlflow.autolog()
+with mlflow.start_run():
+    print('toto')
+```
+
+>Ajoutez donc autolog dans votre script `main.py`. N'oubliez pas d'importer le module `mlflow` en début de fichier.
+
+Cela donne donc ce script :
+```python
+import logging
+
+import fire
+import mlflow
+
+from titanic.training.steps.load_data import load_data
+from titanic.training.steps.validate import validate
+from titanic.training.steps.split_train_test import split_train_test
+from titanic.training.steps.train import train
+
+def workflow(input_data_path: str, n_estimators: int, max_depth: int, random_state: int) -> None:
+    logging.warning(f"workflow input path : {input_data_path}")
+    with mlflow.start_run():
+        local_path = load_data(input_data_path)
+        xtrain_path, xtest_path, ytrain_path, ytest_path = split_train_test(local_path)
+        model_path = train(xtrain_path, ytrain_path, n_estimators, max_depth, random_state)
+        validate(model_path, xtest_path, ytest_path)
+
+
+if __name__ == "__main__":
+    fire.Fire(workflow)
+
+
+```
+
+Dans notre cas, l'utilisation d'`mlflow.autolog()` ne donnera pas grand-chose de plus, car l'utilisation d'autolog 
+se fait souvent de manière transparente par défaut. Il faut donc fréquemment ajouter des logs supplémentaires pour avoir
+des informations plus pertinentes.
+
+C'est ce que nous allons maintenant faire !
+
+Afin de garantir une explicabilité et une transparence maximales de nos modèles, nous allons ajouter des logs pour toutes les données
+utilisées dans notre pipeline de training. Cela inclut :
+- Les données brutes utilisées pour l'entraînement
+- Les splits de données (train, test, validation)
+- Les modèles entraînés
+- Les graphiques générés
+
+
+En effet, en enregistrant toutes les données utilisées dans notre pipeline de training, nous pouvons mieux comprendre comment notre modèle
+a été entraîné et quelles données ont été utilisées pour le faire. Cela nous permet également de reproduire les résultats 
+si nécessaire, ce qui est essentiel pour garantir la fiabilité et la robustesse de nos modèles. C'est dans l'esprit de MLOps,
+qui vise à rendre les processus de machine learning plus transparents et plus faciles à gérer. 
+
+En effet, pour un modele de ML, il est crucial de pouvoir retracer l'origine des données utilisées pour son entraînement. 
+Cela permet de garantir la qualité et la fiabilité du modèle, ainsi que de comprendre les biais potentiels dans les données. 
+Nous voulons garantir qu'un modele qui part en Production a bien toutes les informations nécessaires stockées 
+dans un run mlflow, pour être compris et maintenu dans le temps.
+
+Nous allons donc enregistrer tous les fichiers en entrées et en sorties de chaque étape, le rapport y data profiling 
+et également le model. Tout cela dans notre run mlflow.
+
+Nous allons également en profiter pour utiliser les fichiers et dossiers temporaires, afin d'éviter d'écrire nos fichiers dans le répertoire `dist`
+de notre projet, ce qui n'est pas une bonne pratique. Cela ralentit vos traitements et pollue votre espace de travail.
+Dans ce cas précis, cela peut poser un problème de dataleakage, car les fichiers restent sur votre disque dur.
+De plus, en cas de grosse volumétrie, vous risquez de saturer votre espace disque rapidement si vous ne programmez
+pas le nettoyage de ces fichiers.
+Enfin, ce code sera exécuté dans un environnement Docker dans le Cloud et il est préférable de ne pas écrire sur le disque dur, en
+dehors des dossiers temporaires. Voire parfois, le disque dur n'est même pas accessible en écriture !
+Pour utiliser les fichiers et dossiers temporaires, nous allons utiliser le module `tempfile` de Python :
+```python
+import tempfile
+with tempfile.TemporaryDirectory() as temp_dir:
+    # utilisez temp_dir pour stocker vos fichiers temporaires
+    pass  # votre code ici
+with tempfile.NamedTemporaryFile(suffix=".csv") as temp_file:
+    # utilisez temp_file.name pour accéder au nom du fichier temporaire
+    pass  # votre code ici
+```
+
+Allez, c'est parti !
+
+Commençons par load_data. Modifiez le fichier `./src/titanic/training/steps/load_data.py`. Ajoutez-y les imports manquants,
+remplacez également la ligne suivante par l'utilisation d'un dossier temporaire :
+
+```python
+Path("./dist/").mkdir(parents=True, exist_ok=True)
+```
+
+> ⚠️ **Attention** : Faites bien attention aux nouvelles indentations !!
+
+Enfin, enregistrez le fichier csv téléchargé et le rapport de y profiling généré avec la fonction `log_artifact`.
+Afin de permettre à la prochaine étape de pouvoir récupérer le fichier, retournez le chemin du fichier stocké dans mlflow.
+Votre code devrait ressembler à ceci :
+```python
+import logging
+import os
+from pathlib import Path
+import tempfile # Nouvel import pour gérer les fichiers temporaires
+
+import boto3
+import mlflow # Nouvel import pour mlflow
+import pandas as pd
+from ydata_profiling import ProfileReport
+
+
+ARTIFACT_PATH = "path_output"
+PROFILING_PATH = "profiling_reports"
+
+
+def load_data(path: str) -> str:
+  logging.warning(f"load_data on path : {path}")
+
+  with tempfile.TemporaryDirectory() as tmp_dir: # Utilisation d'un dossier temporaire
+    local_path = Path(tmp_dir, "data.csv") # Fichier temporaire pour stocker les données
+    logging.warning(f"to path : {local_path}")
+
+    s3_client = boto3.client(
+      "s3",
+      endpoint_url=os.environ.get("MLFLOW_S3_ENDPOINT_URL"),
+      aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+      aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+
+    s3_client.download_file("kto-titanic", path, local_path)
+    df = pd.read_csv(local_path)
+
+    profile = ProfileReport(df, title=f"Profiling Report - {local_path.stem}")
+    with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp_file: # Fichier temporaire pour le rapport de profiling
+      profile.to_file(tmp_file.name)
+      mlflow.log_artifact(tmp_file.name, PROFILING_PATH) # Log du rapport de profiling dans mlflow
+
+    mlflow.log_artifact(str(local_path), ARTIFACT_PATH) # Log du fichier de données dans mlflow
+
+  return f"{ARTIFACT_PATH}/{local_path.name}" # Retourne le chemin dans mlflow
+
+```
+
+Procédons de même pour le split. Modifiez le fichier `./src/titanic/training/steps/split_train_test.py`. Ajoutez-y les imports manquants,
+créez un client mlflow afin de télécharger les données brutes de l'étape précédente depuis mlflow dans un dossier temporaire 
+et enregistrez les fichiers de splits dans mlflow.
+Enfin, n'oubliez pas de retourner les chemins des fichiers dans mlflow. Votre code devrait ressembler à ceci :
+```python
+import logging
+from pathlib import Path
+import tempfile # Nouvel import pour gérer les fichiers temporaires
+
+import mlflow # Nouvel import pour mlflow
+import pandas as pd
+import sklearn.model_selection
+
+client = mlflow.MlflowClient() # Client mlflow pour interagir avec le server de tracking
+
+FEATURES = ["Pclass", "Sex", "SibSp", "Parch"]
+
+TARGET = "Survived"
+
+
+def split_train_test(data_path: str) -> tuple[str, str, str, str]:
+    logging.warning(f"split on {data_path}")
+    # Téléchargement des données brutes depuis mlflow
+    df = pd.read_csv(client.download_artifacts(run_id=mlflow.active_run().info.run_id, path=data_path), index_col=False) 
+
+    y = df[TARGET]
+    x = df[FEATURES]
+    x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size=0.3, random_state=42)
+
+    datasets = [
+      (x_train, "xtrain", "xtrain.csv"),
+      (x_test, "xtest", "xtest.csv"),
+      (y_train, "ytrain", "ytrain.csv"),
+      (y_test, "ytest", "ytest.csv"),
+    ]
+
+    artifact_paths = []
+    with tempfile.TemporaryDirectory() as tmp_dir: # Utilisation d'un dossier temporaire
+        for data, artifact_path, filename in datasets:
+            file_path = Path(tmp_dir, filename)
+            data.to_csv(file_path, index=False)
+            mlflow.log_artifact(str(file_path), artifact_path) # Log du fichier de split dans mlflow
+            artifact_paths.append(f"{artifact_path}/{filename}") # Stockage du chemin dans mlflow
+
+    return tuple(artifact_paths)
+
+```
+
+Passons à l'entraînement. Modifiez le fichier `./src/titanic/training/steps/train.py`. Ajoutez-y les imports manquants,
+créez un client mlflow afin de télécharger les fichiers de splits depuis mlflow dans un dossier temporaire et 
+enregistrez le modèle entraîné dans mlflow sous format de joblib comme un simple artefact.
+Enfin, n'oubliez pas de retourner le chemin du modèle dans mlflow. Votre code devrait ressembler à ceci :
+```python
+import logging
+from pathlib import Path
+import tempfile # Nouvel import pour gérer les fichiers temporaires
+
+import joblib
+import mlflow # Nouvel import pour mlflow
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+
+client = mlflow.MlflowClient() # Client mlflow pour interagir avec le server de tracking
+
+ARTIFACT_PATH = "model_trained"
+
+
+def train(x_train_path: str, y_train_path: str, n_estimators: int, max_depth: int, random_state: int) -> str:
+    logging.warning(f"train {x_train_path} {y_train_path}")
+    x_train = pd.read_csv(
+        client.download_artifacts(run_id=mlflow.active_run().info.run_id, path=x_train_path), index_col=False # Téléchargement des données depuis mlflow
+    )
+    y_train = pd.read_csv(
+        client.download_artifacts(run_id=mlflow.active_run().info.run_id, path=y_train_path), index_col=False # Téléchargement des données depuis mlflow
+    )
+
+    x_train = pd.get_dummies(x_train)
+
+    model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=random_state)
+    model.fit(x_train, y_train)
+
+    model_filename = "model.joblib"
+    with tempfile.TemporaryDirectory() as tmp_dir: # Utilisation d'un dossier temporaire
+        model_path = Path(tmp_dir, model_filename)
+        joblib.dump(model, model_path)
+        mlflow.log_artifact(str(model_path), ARTIFACT_PATH) # Log du modèle dans mlflow
+
+    return f"{ARTIFACT_PATH}/{model_filename}" # Retourne le chemin du modèle dans mlflow
+
+```
+
+Enfin, terminons par la validation. Modifiez le fichier `./src/titanic/training/steps/validate.py`. Ajoutez-y les imports manquants,
+créez un client mlflow afin de télécharger les fichiers de splits et le modèle depuis mlflow dans un dossier temporaire.
+Ensuite, calculez vos métriques, votre feature importance et enregistrez-les dans mlflow. Pour les métriques, utilisez la fonction `log_metric`.
+Pour la feature importance, vous pouvez utiliser la fonction `log_dict`.
+
+Enfin, sauvegardez votre modèle validé dans mlflow avec `log_model` et enregistrez le sous une nouvelle version dans le modèle registry 
+de mlflow avec `register_model`. Attention, cette méthode peut renvoyer des exceptions. Veillez à bien les gérer et logger les erreurs avec le module `logging`.
+
+Votre code devrait ressembler à ceci :
+```python
+import logging
+
+import joblib
+import pandas as pd
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, median_absolute_error
+import mlflow # Nouvel import pour mlflow
+from mlflow.models import infer_signature # Nouvel import pour inférer la signature du modèle
+
+client = mlflow.MlflowClient()
+
+
+def validate(model_path: str, x_test_path: str, y_test_path: str) -> None:
+    logging.warning(f"validate {model_path}")
+    model = joblib.load(client.download_artifacts(run_id=mlflow.active_run().info.run_id, path=model_path)) # Téléchargement du modèle depuis mlflow
+
+    x_test = pd.read_csv(
+        client.download_artifacts(run_id=mlflow.active_run().info.run_id, path=x_test_path), index_col=False # Téléchargement des données depuis mlflow
+    )
+    y_test = pd.read_csv(
+        client.download_artifacts(run_id=mlflow.active_run().info.run_id, path=y_test_path), index_col=False # Téléchargement des données depuis mlflow
+    )
+
+    x_test = pd.get_dummies(x_test)
+
+    if y_test.shape[1] == 1:
+        y_test = y_test.iloc[:, 0]
+
+    y_pred = model.predict(x_test)
+
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    medae = median_absolute_error(y_test, y_pred)
+
+    feature_names = x_test.columns.tolist()
+
+    if hasattr(model, "feature_importances_"):
+        importances = model.feature_importances_
+        feature_importance = {
+        name: float(importance) for name, importance in zip(feature_names, importances, strict=False)
+        }
+    elif hasattr(model, "coef_"):
+        coefs = model.coef_
+        if hasattr(coefs, "shape") and len(coefs.shape) > 1:
+            coefs = coefs[0]
+        feature_importance = {name: float(coef) for name, coef in zip(feature_names, coefs, strict=False)}
+    else:
+        feature_importance = {name: 0.0 for name in feature_names}
+        logging.warning("Model does not have feature importance attributes")
+
+    mlflow.log_metric("mse", mse) # Log des métriques dans mlflow
+    mlflow.log_metric("mae", mae)
+    mlflow.log_metric("r2", r2)
+    mlflow.log_metric("medae", medae)
+    mlflow.log_dict(feature_importance, "feature_importance.json") # Log de la feature importance dans mlflow
+
+    model_info = mlflow.sklearn.log_model(
+        model, name="model_final", signature=infer_signature(x_test, y_pred), input_example=x_test.head(10)
+    ) # Log du modèle validé dans mlflow
+    logging.warning(f"artifact path {model_info.artifact_path}") # Log des informations du modèle
+    logging.warning(f"model uri {model_info.model_uri}")
+    logging.warning(f"model uuid {model_info.model_uuid}")
+    logging.warning(f"model metadata {model_info.metadata}")
+
+    try:
+        mlflow.register_model(model_info.model_uri, "model_registered") # Enregistrement du modèle dans le modèle registry
+    except Exception as e:
+        logging.error(f"Erreur registry: {e}") # Log de l'erreur si l'enregistrement échoue
+
+```
+
+Vous avez terminé ! Bravo !
+
+Exécutez de nouveau votre projet mlflow en local à l'aide de votre script `./scripts/test_local_mlflow.sh`, avec la même commande que précédemment : 
+```bash
+source ./scripts/test_local_mlflow.sh
+```
+
+![226.png](img/226.png)
+
+Notez que cette fois-ci, l'exécution est un peu plus longue, car nous avons ajouté des logs mlflow et utilisé des fichiers temporaires.
+Les fichiers temporaires sont créés et supprimés automatiquement, ce qui évite de polluer votre espace de travail. Constatez les téléchargements
+depuis mlflow dans votre terminal.
+
+Notez enfin que votre run s'est bien terminé et qu'il a été enregistré dans votre serveur mlflow dans le Cloud avec un nouvel identifiant.
+
+Retournez dans votre serveur mlflow dans le Cloud et constatez les différences ! Vous devriez avoir plus d'informations dans votre nouveau run.
+Notez déjà la présence d'un modèle enregistré dans la colonne modèles. Quand vous ouvrez votre run, vous devriez avoir plus d'informations
+dans les métriques, mais aussi dans les artefacts. Vous devriez voir le rapport de ydata profiling, les fichiers de splits, le modèle entraîné, la feature importance
+et le modèle validé.
+
+![227.png](./img/227.png)
+![228.png](./img/228.png)
+![229.png](./img/229.png)
+![230.png](./img/230.png)
+
+> ⚠️ **Évaluation** : **Veuillez prendre 4 captures d'écran comme celles ci-dessus et veuillez les transmettre par mail
+> à votre professeur. N'oubliez pas de commiter et pusher vos modifications dans votre dépôt GitHub. 
+> Ce sera également pris en compte dans votre évaluation.**
+
+![236.png](./img/236.png)
+
+Notez que nous avons désormais un modèle dans le modèle registry de mlflow. Vous pouvez cliquer dessus pour voir les différentes versions
+de votre modèle. Pour l'instant, il n'y en a qu'une seule. Pour le voir, retournez sur la page principale de mlflow, 
+puis cliquez sur l'onglet `Models` dans le menu de gauche.
+
+![231.png](./img/231.png)
+![232.png](./img/232.png)
+![233.png](./img/233.png)
+![234.png](./img/234.png)
+![235.png](./img/235.png)
+
+Enfin, dernière chose, vous avez modifié votre code et ce dernier est testé unitairement ! Prenez l'habitude d'exécuter vos
+tests unitaires régulièrement pour vérifier que rien n'a été cassé. Comme vous pouvez le constater, mlflow ne modifie
+en rien la bonne exécution de nos tests, ce qui est une excellente nouvelle !
+
+Lancez donc les tests unitaires de la partie training avec la commande suivante : 
+```bash
+uv run pytest ./tests/training
+```
+Vous devriez voir que tous les tests passent correctement, y compris ceux que j'ai préalablement codés pour valider votre avancée.
+
+![237.png](./img/237.png)
+
+### Exécution dans un environnement Docker
 
 Créez également un fichier `Dockerfile` dans le même répertoire : 
 ```Dockerfile
@@ -292,110 +723,7 @@ Notez également qu'il n'y a pas beaucoup d'informations dans votre run à part 
 
 ![killing_local_mlflow.png](00_materials/06_ml_platforms/killing_local_mlflow.png)
 
-Ajoutons maintenant quelques éléments dans nos run mlflow.
 
-Pour ce faire, nous allons utiliser les capacités de MLflow Tracking, dont voici la [documentation](https://mlflow.org/docs/latest/tracking/tracking-api.html) 
-Prenons un peu de temps pour la parcourir !
-
-Nous allons utiliser l'autolog pour commencer. Il s'agit d'une fonctionnalité puissante qui vous permet de logger 
-automatiquement les métriques, les paramètres et les modèles sans avoir besoin de déclarer explicitement des 
-instructions de journalisation. Tout ce que vous avez à faire est d'appeler `mlflow.autolog()` avant votre code 
-d'entraînement. Cette fonctionnalité est disponible pour plusieurs bibliothèques de machine learning telles que 
-scikit-learn, TensorFlow, PyTorch, XGBoost, LightGBM ...
-
-Lorsque vous utilisez l'autolog, MLflow enregistre automatiquement diverses informations sur votre exécution, notamment :
-- Les **métriques** : MLflow présélectionne un ensemble de métriques à enregistrer, en fonction du modèle et de la
-bibliothèque que vous utilisez.
-- Les **paramètres** : les hyperparamètres spécifiés pour l'entraînement, ainsi que les valeurs par défaut fournies 
-par la bibliothèque si elles ne sont pas explicitement définies.
-- La **signature du modèle** : une instance de signature de modèle qui décrit le schéma d'entrée et de sortie du modèle.
-- Les **artefacts** : par exemple, les points de contrôle du modèle.
-- Le **jeu de données** : l'objet de jeu de données utilisé pour l'entraînement, le cas échéant 
-(ne fonctionnera pas dans notre cas, cette fonctionnalité est encore en développement).
-
-
-Pour utiliser l'autolog dans notre projet, ajoutez ces quelques lignes dans `train.py`, pensez également à importer le 
-module `mlflow.keras` :
-```python
-import mlflow.keras
-mlflow.autolog()
-with mlflow.start_run():
-    print('toto')
-```
-
-Cela donne donc ce script : 
-```python
-import argparse
-import os
-import boto3
-import mlflow.keras
-
-from steps.s3_wrapper import S3ClientWrapper
-from steps.extraction import extraction_from_annotation_file
-from steps.split import random_split_train_evaluate_test_from_extraction
-from steps.test import Inference, test_model
-from steps.train_and_evaluate import train_and_evaluate_model
-
-parser = argparse.ArgumentParser("training")
-parser.add_argument("--split_ratio_train", type=float)
-parser.add_argument("--split_ratio_evaluate", type=float)
-parser.add_argument("--split_ratio_test", type=float)
-parser.add_argument("--batch_size", type=int)
-parser.add_argument("--epochs", type=int)
-parser.add_argument("--working_dir", type=str)
-
-args = parser.parse_args()
-split_ratio_train = args.split_ratio_train
-split_ratio_evaluate = args.split_ratio_evaluate
-split_ratio_test = args.split_ratio_test
-batch_size = args.batch_size
-epochs = args.epochs
-working_dir = args.working_dir
-
-if __name__ == "__main__":
-    mlflow.autolog()
-    with mlflow.start_run():
-        s3_client = S3ClientWrapper(
-            boto3.client(
-                "s3",
-                endpoint_url=os.environ.get("MLFLOW_S3_ENDPOINT_URL"),
-                aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
-                aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY")
-            )
-        )
-
-        bucket_name = "cats-dogs-other"
-        extract, classes = extraction_from_annotation_file(bucket_name,
-                                                        "dataset/cats_dogs_others-annotations.json",
-                                                        working_dir + "/cats_dogs_others-annotations.json",
-                                                        s3_client)
-
-        train_dir = working_dir + "/train"
-        evaluate_dir = working_dir + "/evaluate"
-        test_dir = working_dir + "/test"
-
-        random_split_train_evaluate_test_from_extraction(extract, classes, split_ratio_train,
-                                                        split_ratio_evaluate, split_ratio_test,
-                                                        train_dir, evaluate_dir, test_dir, bucket_name,
-                                                        "dataset/extract/", s3_client)
-
-        model_filename = "final_model.keras"
-        model_plot_filename = "model_plot.png"
-
-        # train & evaluate
-        model_dir = working_dir + "/model"
-        model_path = model_dir + "/" + model_filename
-        plot_filepath = model_dir + "/" + model_plot_filename
-
-        train_and_evaluate_model(train_dir, evaluate_dir, test_dir, model_dir, model_path,
-                                plot_filepath, batch_size, epochs)
-
-        # test the model
-        model_inference = Inference(model_path)
-
-        test_model(model_inference, model_dir, test_dir)
-
-```
 
 Reconstruisez l'image docker avec la commande :
 ```bash
