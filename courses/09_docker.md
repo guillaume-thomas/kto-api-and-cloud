@@ -14,7 +14,7 @@ non indexés.
 Changez maintenant de branche avec `git switch step06`.
 Créez désormais une branche avec votre nom : `git switch -c votrenom/step06`
 
-## Qu'est##ce que c'est ?
+## Qu'est ce que c'est ?
 ## A quoi ça sert ?
 ## Comment ça fonctionne ?
 ## Manipulation de Docker
@@ -23,114 +23,114 @@ Créez désormais une branche avec votre nom : `git switch -c votrenom/step06`
 
 ## Introduction
 
-### Abstract
+### Résumé
 
-Why deploy our model in production? Why deploy it on the Cloud?
+Pourquoi déployer notre modèle en production ? Pourquoi le déployer dans le Cloud ?
 
-Deploying our service in production means making our application available to as many people as possible by
-ensuring our customers a technical environment that is:
+Déployer notre service en production signifie rendre notre application disponible au plus grand nombre en
+assurant à nos clients un environnement technique qui est :
 
-- stable: our webservice responds to our customers in a consistent way, the new versions of our service
-  are validated and tested before being deployed on our production environment (updates)
-- robust: production must respond as quickly as possible, as best as possible, while supporting the load that we
-  imposes on it (ability to respond to as many customers as possible at the same time). Production must be scaled.
-- secure
+- stable : notre webservice répond à nos clients de manière cohérente, les nouvelles versions de notre service
+  sont validées et testées avant d'être déployées sur notre environnement de production (mises à jour)
+- robuste : la production doit répondre aussi rapidement que possible, aussi bien que possible, tout en supportant la charge que nous
+  lui imposons (capacité à répondre à autant de clients que possible en même temps). La production doit être scalable.
+- sécurisé
 
-In the lifecycle of a project, our application will be executed on several types of environment:
+Dans le cycle de vie d'un projet, notre application sera exécutée sur plusieurs types d'environnements :
 
 ![environments](00_materials/09_docker/environments.png)
 
-- local: Your own development environment, your local machine or your Codespace. Allows you to validate your developments directly.
-- development: first environment on which you deploy your service. This environment will be updated
-  very often and allows you to validate that technically, your new service version runs well on a technical environment
-  consistent with your production. This environment is generally less powerful than the production environment
-- preproduction (stagging): The final stage before production, this environment is traditionally shaped like production.
-  Allows you to validate the good performance of your service in an environment that is near of your production.
-  Often used by Q&A or Product Owners to confirm definitively that the service meets its requirements.
+- local : Votre propre environnement de développement, votre machine locale ou votre Codespace. Permet de valider vos développements directement.
+- développement : premier environnement sur lequel vous déployez votre service. Cet environnement sera mis à jour
+  très souvent et permet de valider que techniquement, votre nouvelle version du service fonctionne bien sur un environnement technique
+  cohérent avec votre production. Cet environnement est généralement moins puissant que l'environnement de production
+- préproduction (staging) : L'étape finale avant la production, cet environnement est traditionnellement façonné comme la production.
+  Permet de valider les bonnes performances de votre service dans un environnement proche de votre production.
+  Souvent utilisé par la Q&A ou les Product Owners pour confirmer définitivement que le service répond à ses exigences.
 - production
 
-These environments allow us to secure, test, validate our application before deploying it and impacting our users
+Ces environnements nous permettent de sécuriser, tester, valider notre application avant de la déployer et d'impacter nos utilisateurs
 
-BTW, what is a Cloud? For what purposes?
+Au fait, qu'est-ce qu'un Cloud ? À quoi ça sert ?
 
 ![usual platform](00_materials/09_docker/usual%20platform.png)
 
 ![focus on prem](00_materials/09_docker/focus%20on%20prem.png)
 
 
-### In the Cloud, different kinds of platforms
+### Dans le Cloud, différents types de plateformes
 
-What are the most famous Cloud Providers in the World?
+Quels sont les fournisseurs Cloud les plus célèbres au monde ?
 
-Offers? Services? Pricing?
+Offres ? Services ? Tarifs ?
 
-What kinds of platforms?
+Quels types de plateformes ?
 
-- **IaaS**: Infrastructure As A Service
-- **PaaS**: Platform As A Service
-- **SaaS**: Service As A Service
-- **CaaS**: Container As A Service
+- **IaaS** : Infrastructure As A Service
+- **PaaS** : Platform As A Service
+- **SaaS** : Service As A Service
+- **CaaS** : Container As A Service
 
-What do they mean? What are the differences between them?
+Que signifient-ils ? Quelles sont les différences entre eux ?
 
 ![with cloud providers](00_materials/09_docker/with%20cloud%20providers.png)
 
-CaaS means that we will use containers. But what are they?
+CaaS signifie que nous allons utiliser des conteneurs. Mais qu'est-ce que c'est ?
 
-## 3 - Containers with Docker
+## 3 - Conteneurs avec Docker
 
-### a - What is a container? What are the differences with virtualization?
+### a - Qu'est-ce qu'un conteneur ? Quelles sont les différences avec la virtualisation ?
 
 ![differences](00_materials/09_docker/VM%20vs%20containers.png)
 
-### b - Why we should use them for ML?
+### b - Pourquoi devrions-nous les utiliser pour le ML ?
 
 ![artifacts](00_materials/09_docker/dev%20artifact.png)
 
-Few arguments:
-- They are lighter
-- This solution is more scalable
-- This solution is more flexible (we choose the python version for example)
-- We can install libraries on the host os easily
-- You can run your artifact locally as it could run remotely, in the Cloud
+Quelques arguments :
+- Ils sont plus légers
+- Cette solution est plus scalable
+- Cette solution est plus flexible (nous choisissons la version de python par exemple)
+- Nous pouvons installer des bibliothèques sur le système d'exploitation hôte facilement
+- Vous pouvez exécuter votre artefact localement comme il pourrait s'exécuter à distance, dans le Cloud
 
-### c - What is Docker? How does it work?
+### c - Qu'est-ce que Docker ? Comment ça fonctionne ?
 
-Docker is container software. It is one of the most used in the market. Containers runs in the Docker daemon.
-A command line interface allows to interact with the Docker daemon.
+Docker est un logiciel de conteneurisation. C'est l'un des plus utilisés sur le marché. Les conteneurs s'exécutent dans le daemon Docker.
+Une interface en ligne de commande permet d'interagir avec le daemon Docker.
 
-A container relies on an image. An image is created with a Dockerfile file. This image is like a template.
+Un conteneur repose sur une image. Une image est créée avec un fichier Dockerfile. Cette image est comme un template.
 
-This is a sum up about the Docker Engine:
+Voici un résumé sur le moteur Docker :
 
 ![docker sum up](00_materials/09_docker/docker%20sum%20up.png)
 
-An image uses instructions to create the layers of the template.
+Une image utilise des instructions pour créer les couches du template.
 
-When you build an image, you can push it to a container registry. There are a lot of different container registries in the market. The most popular
-is Docker Hub : https://hub.docker.com/
+Lorsque vous construisez une image, vous pouvez la pousser vers un registre de conteneurs. Il existe de nombreux registres de conteneurs différents sur le marché. Le plus populaire
+est Docker Hub : https://hub.docker.com/
 
-Now, let's play with docker!
+Maintenant, jouons avec docker !
 
-First, we will launch a Debian system onto it. To do so, we search it on google. We can reach a page from Docker Hub: https://hub.docker.com/_/debian
+D'abord, nous allons lancer un système Debian dessus. Pour ce faire, nous le recherchons sur google. Nous pouvons atteindre une page depuis Docker Hub : https://hub.docker.com/_/debian
 
-We will use the tag bullseye. You can find all the tags from the Tags section of this page.
+Nous utiliserons le tag bullseye. Vous pouvez trouver tous les tags depuis la section Tags de cette page.
 
 ```bash
 docker run -it debian:bullseye bash
 ```
 
-This command will pull the image from the docker registry, create a container from this image and launch a bash prompt on it.
+Cette commande va récupérer l'image depuis le registre docker, créer un conteneur depuis cette image et lancer un prompt bash dessus.
 
-As you can see, we are currently root :
+Comme vous pouvez le voir, nous sommes actuellement root :
 
 ![running debian](00_materials/09_docker/playing%20with%20docker/running%20debian.png)
 
-As you can see, the container you are currently running is a rudimentary debian. From your prompt if you want to launch the python interpreter. it will not work!
+Comme vous pouvez le voir, le conteneur que vous exécutez actuellement est un debian rudimentaire. Depuis votre prompt si vous voulez lancer l'interpréteur python, ça ne fonctionnera pas !
 
 ![python not working](00_materials/09_docker/playing%20with%20docker/python%20not%20working.png)
 
-It is because this system does not have python installed on it. Let's try to execute a script in python.
+C'est parce que ce système n'a pas python installé dessus. Essayons d'exécuter un script en python.
 
 ```bash
 apt update
@@ -144,83 +144,83 @@ touch my_script.py
 vim my_script.py
 ```
 
-In this script, write this code:
+Dans ce script, écrivez ce code :
 
 ```python
 import platform 
 print("Coucou ! On tourne sur " + platform.platform())
 ```
 
-Now we can launch this script from the python interpreter:
+Maintenant nous pouvons lancer ce script depuis l'interpréteur python :
 
 ```bash
 python my_script.py
 ```
 
-Now we quit the command prompt of our container:
+Maintenant nous quittons le prompt de commande de notre conteneur :
 
 ```bash
 exit
 ```
 
-By quitting the prompt, the container will shut down. To see it, use this command:
+En quittant le prompt, le conteneur s'arrêtera. Pour le voir, utilisez cette commande :
 
 ```bash
 docker ps -a
 ```
 
-ps list all the containers the active containers. You can add the option -a to list all of them, including the closed ones.
+ps liste tous les conteneurs actifs. Vous pouvez ajouter l'option -a pour les lister tous, y compris ceux qui sont fermés.
 
-Now let's clean our workspace by deleting this closed container:
+Maintenant nettoyons notre espace de travail en supprimant ce conteneur fermé :
 
 ```bash
 docker rm <id of the container>
 ```
 
-Note that the image docker pulled from the registry is still in cache in your local docker engine. To list them, you can use the command:
+Notez que l'image docker récupérée depuis le registre est toujours en cache dans votre moteur docker local. Pour les lister, vous pouvez utiliser la commande :
 
 ```bash
 docker images
 ```
 
-To delete properly the image, you can use the command:
+Pour supprimer correctement l'image, vous pouvez utiliser la commande :
 
 
 ```bash
 docker rmi <id of the image>
 ```
 
-As you can see, it can be difficult to create a ready to use runtime environment if we had to launch some linux commands to install python, push our code on it ect.
+Comme vous pouvez le voir, il peut être difficile de créer un environnement d'exécution prêt à l'emploi si nous devions lancer des commandes linux pour installer python, pousser notre code dessus, etc.
 
-But we can create our own images !!!
+Mais nous pouvons créer nos propres images !!!
 
-By writing a Dockerfile, we will use some instructions to build our image. Now, let's write our first Dockerfile.
+En écrivant un Dockerfile, nous allons utiliser des instructions pour construire notre image. Maintenant, écrivons notre premier Dockerfile.
 
-### d - Writing our first Dockerfile
+### d - Écrire notre premier Dockerfile
 
-In this section, we will try to make the same thing we have done in the previous playground, but directly from 
-a custome Docker image.
+Dans cette section, nous allons essayer de faire la même chose que nous avons faite dans le terrain de jeu précédent, mais directement depuis 
+une image Docker personnalisée.
 
-First, we have to create this file: Dockerfile
+D'abord, nous devons créer ce fichier : Dockerfile
 
 Créez le à la racine de votre projet : 
 
 
-We will use an official python image from Docker as the base of our image. And we will build some custom layers upon it.
+Nous utiliserons une image python officielle de Docker comme base de notre image. Et nous allons construire des couches personnalisées dessus.
 
-If we navigate in the Docker hub website, we can find this page : https://hub.docker.com/_/python
+Si nous naviguons sur le site web Docker hub, nous pouvons trouver cette page : https://hub.docker.com/_/python
 
-It gives us all the python image created by the community. One of them is a bullseye image with python already installed on it.
+Elle nous donne toutes les images python créées par la communauté. L'une d'entre elles est une image bullseye avec python déjà installé dessus.
 
-We will begin our construction with this image. To do so, in our Dockerfile, we add this instruction:
+Nous commencerons notre construction avec cette image. Pour ce faire, dans notre Dockerfile, nous ajoutons cette instruction :
 
 ```dockerfile
 FROM python:3.11.2-bullseye
 ```
 
-This instruction tells we are constructing our image FROM the python:3.11.2-bullseye as a base.
+Cette instruction indique que nous construisons notre image DEPUIS python:3.11.2-bullseye comme base.
 
-Okay! That's a good start! Now let's build this image and create a container from it!
+D'accord ! C'est un bon début ! Maintenant construisons cette image et créons un conteneur depuis celle-ci !
 
 ```bash
 docker build -t mlopspython/first-image .
@@ -228,27 +228,27 @@ docker build -t mlopspython/first-image .
 docker run -it mlopspython/first-image
 ```
 
-When you launch the docker run command, as you can see, it opens the python interpreter within our container.
-It is because the image is constructed like this.
+Lorsque vous lancez la commande docker run, comme vous pouvez le voir, elle ouvre l'interpréteur python dans notre conteneur.
+C'est parce que l'image est construite comme ça.
 
-If you look at the end of the Dockerfile of this image 
+Si vous regardez à la fin du Dockerfile de cette image 
 (https://github.com/docker-library/python/blob/2bcce464bea3a9c7449a2fe217bf4c24e38e0a47/3.11/bullseye/Dockerfile), 
-a "python3" command is launched.
+une commande "python3" est lancée.
 
-To do so, the CMD instruction is used. You can dig on this subject by consulting this 
+Pour ce faire, l'instruction CMD est utilisée. Vous pouvez creuser ce sujet en consultant cette 
 page : https://medium.com/ci-cd-devops/dockerfile-run-vs-cmd-vs-entrypoint-ae0d32ffe2b4
 
-As you should see, a CMD final instruction can be overriden. So if we launch our container with this command:
+Comme vous devriez le voir, une instruction CMD finale peut être remplacée. Donc si nous lançons notre conteneur avec cette commande :
 
 ```bash
 docker run -it mlopspython/first-image bash
 ```
 
-It will launch the container and gives us a root command prompt like before! Exit first your container with the exit() python instruction and let's give a try!
+Cela lancera le conteneur et nous donnera un prompt de commande root comme avant ! Quittez d'abord votre conteneur avec l'instruction python exit() et essayons !
 
-Ok! Now, we want to create our /opt/app-root directory and our python script.
+Ok ! Maintenant, nous voulons créer notre répertoire /opt/app-root et notre script python.
 
-In our Dockerfile:
+Dans notre Dockerfile :
 
 ```dockerfile
 FROM python:3.11.2-bullseye
@@ -260,7 +260,7 @@ WORKDIR /opt/app-root
 RUN echo "import platform\nprint(\"Coucou ! On tourne sur \" + platform.platform())" > myscript.py
 ```
 
-Now, let's build our image and run our container again!
+Maintenant, construisons notre image et lançons à nouveau notre conteneur !
 
 ```bash
 docker build -t mlopspython/first-image .
@@ -268,27 +268,27 @@ docker build -t mlopspython/first-image .
 docker run -it mlopspython/first-image bash
 ```
 
-As you can see, this time, the python image has not been downloaded again. It is because the image is record in the local Docker cache!
+Comme vous pouvez le voir, cette fois, l'image python n'a pas été téléchargée à nouveau. C'est parce que l'image est enregistrée dans le cache Docker local !
 
 ![not download again](00_materials/09_docker/playing%20with%20docker/not%20downloading%20image%20again.png)
 
-Now, from your container, if you launch this command:
+Maintenant, depuis votre conteneur, si vous lancez cette commande :
 
 ```bash
 python /opt/app-root/myscript.py
 ```
 
-Now, we exit the container and we will try to go further.
+Maintenant, nous quittons le conteneur et nous allons essayer d'aller plus loin.
 
 ```bash
 exit
 ```
 
-But first, clean correctly your dead containers.
+Mais d'abord, nettoyez correctement vos conteneurs morts.
 
-Now we want to tell to our image to execute the script by itself and print the result, without running and opening the container by ourself.
+Maintenant nous voulons dire à notre image d'exécuter le script par elle-même et d'imprimer le résultat, sans exécuter et ouvrir le conteneur nous-mêmes.
 
-To do so, we will use the instruction ENTRYPOINT:
+Pour ce faire, nous utiliserons l'instruction ENTRYPOINT :
 
 ```dockerfile
 FROM python:3.11.2-bullseye
@@ -302,13 +302,13 @@ RUN echo "import platform\nprint(\"Coucou ! On tourne sur \" + platform.platform
 ENTRYPOINT ["python", "myscript.py"]
 ```
 
-Now, let's build the image and run it!
+Maintenant, construisons l'image et lançons-la !
 
 ```bash
 docker build -t mlopspython/first-image .
 ```
 
-As you can see, when you run this build, the lines which already exists are cached and not ran again!
+Comme vous pouvez le voir, lorsque vous lancez ce build, les lignes qui existent déjà sont mises en cache et ne sont pas relancées !
 
 ![not caching again](00_materials/09_docker/playing%20with%20docker/precedence%20is%20cached.png)
 
@@ -316,27 +316,27 @@ As you can see, when you run this build, the lines which already exists are cach
 docker run mlopspython/first-image
 ```
 
-Note that this time, we are running the container without the -it option. It is because we do not want to open a prompt in the container, but just let it execute its code.
+Notez que cette fois, nous lançons le conteneur sans l'option -it. C'est parce que nous ne voulons pas ouvrir un prompt dans le conteneur, mais juste le laisser exécuter son code.
 
-Normally, you should see somthing like this:
+Normalement, vous devriez voir quelque chose comme ceci :
 
 ![running](00_materials/09_docker/playing%20with%20docker/running.png)
 
-Now, it is time to construct our docker image which will contain and run our API!
+Maintenant, il est temps de construire notre image docker qui contiendra et exécutera notre API !
 
-### e - The Dockerfile of our WebService
+### e - Le Dockerfile de notre WebService
 
-But before writing our Dockerfile, lets focus on some new instructions. You can find these definitions come from the Docker reference documentation : https://docs.docker.com/engine/reference/builder/
+Mais avant d'écrire notre Dockerfile, concentrons-nous sur quelques nouvelles instructions. Vous pouvez trouver ces définitions provenant de la documentation de référence Docker : https://docs.docker.com/engine/reference/builder/
 
-- **ENV**: Set an environment variable.
-- **WORKDIR**: The WORKDIR instruction sets the working directory for any RUN, CMD, ENTRYPOINT, COPY and ADD instructions that follow it in the Dockerfile.
-- **COPY**: The COPY instruction copies new files or directories from <src> and adds them to the filesystem of the container at the path <dest>.
-- **EXPOSE**: The EXPOSE instruction informs Docker that the container listens on the specified network ports at runtime.
-- **ENTRYPOINT**: An ENTRYPOINT allows you to configure a container that will run as an executable.
+- **ENV**: Définir une variable d'environnement.
+- **WORKDIR**: L'instruction WORKDIR définit le répertoire de travail pour toute instruction RUN, CMD, ENTRYPOINT, COPY et ADD qui la suit dans le Dockerfile.
+- **COPY**: L'instruction COPY copie de nouveaux fichiers ou répertoires depuis <src> et les ajoute au système de fichiers du conteneur au chemin <dest>.
+- **EXPOSE**: L'instruction EXPOSE informe Docker que le conteneur écoute sur les ports réseau spécifiés au moment de l'exécution.
+- **ENTRYPOINT**: Un ENTRYPOINT vous permet de configurer un conteneur qui s'exécutera comme un exécutable.
 
-Now, let's try to create your Docker image. You can look at the Makefile to know how to build your project with pip.
+Maintenant, essayons de créer votre image Docker. Vous pouvez regarder le Makefile pour savoir comment construire votre projet avec pip.
 
-Do not forget to EXPOSE the port of your Webservice (kindly reminder, we set it to 8080), and to set a final ENTRYPOINT.
+N'oubliez pas d'EXPOSER le port de votre Webservice (petit rappel, nous l'avons défini sur 8080), et de définir un ENTRYPOINT final.
 
 N'oubliez pas qu'il faut télécharger le modèle depuis MLflow. Nous aurons donc encore besoin
 de MLflow. Pour ne pas polluer l'image finale, nous allons utiliser la fonctionnalité de multi-staging de docker.
@@ -402,7 +402,7 @@ EXPOSE 8080
 ENTRYPOINT ["python3", "boot.py"]
 ```
 
-Now, we build and run our image.
+Maintenant, nous construisons et exécutons notre image.
 
 N'oubliez pas d'exporter vos variables d'environnement :
 - $MLFLOW_RUN_ID : Prenez le run id d'un de vos run, le plus à jour :-)
@@ -422,68 +422,68 @@ docker build -t local/mlops_python_2023_2024 --build-arg MLFLOW_RUN_ID=$MLFLOW_R
 docker run -d -p 8080:8080 -e OAUTH2_ISSUER="your issuer" -e OAUTH2_AUDIENCE="your audience" -e OAUTH2_JWKS_URI="the uri" local/mlops_python_2023_2024
 ```
 
-Note the option -d in our docker run command. It is for "detached". It will run the container in detached mode.
+Notez l'option -d dans notre commande docker run. Elle signifie "detached". Elle exécutera le conteneur en mode détaché.
 
--p option allows us to bind the 8080 port of the container to the 8080 port of the host.
+L'option -p nous permet de lier le port 8080 du conteneur au port 8080 de l'hôte.
 
--e Allows you to add some environment variables. They are used here to configure your oAuth2 token validator.
+-e Vous permet d'ajouter des variables d'environnement. Elles sont utilisées ici pour configurer votre validateur de token oAuth2.
 
-This is a complete example :
+Voici un exemple complet :
 
 ```bash
 docker run -d -p 8080:8080 -e OAUTH2_ISSUER="https://dev-ujjk4qhv7rn48y6w.eu.auth0.com/" -e OAUTH2_AUDIENCE="https://gthomas-cats-dogs.com" -e OAUTH2_JWKS_URI=".well-known/jwks.json" mlops_python_2022_2023:1.0.0
 ```
 
-Now, let's try our Service from Postman!
+Maintenant, essayons notre Service depuis Postman !
 
-Do not forget to change the visibility of the 8080 port from Codespace to Public.
+N'oubliez pas de changer la visibilité du port 8080 de Codespace en Public.
 
-Generate an oAuth2 token from Auth0.
+Générez un token oAuth2 depuis Auth0.
 
-And now you can test your API :
+Et maintenant vous pouvez tester votre API :
 
 ![test](00_materials/09_docker/playing%20with%20docker/testing%20container%20from%20postman.png)
 
-To finish this chapter, we need to publish our image to a registry.
+Pour finir ce chapitre, nous devons publier notre image dans un registre.
 
-### f - Push the image to registry
+### f - Pousser l'image vers le registre
 
-As registry, we will use Quay, from RedHat. First, we need to create an account on the website https://developers.redhat.com/.
+Comme registre, nous utiliserons Quay, de RedHat. D'abord, nous devons créer un compte sur le site web https://developers.redhat.com/.
 
-Then, we have to create a Public repository on Quay to push our image on it. To do so, log yourself on quay.io and click to Repositories and on Create New Repository:
+Ensuite, nous devons créer un dépôt Public sur Quay pour pousser notre image dessus. Pour ce faire, connectez-vous sur quay.io et cliquez sur Repositories puis sur Create New Repository :
 
 ![create repo](00_materials/09_docker/quay/create%20a%20repository.png)
 
-Now we create a new public repository named kto/mlops_python_2023_2024 :
+Maintenant nous créons un nouveau dépôt public nommé kto/mlops_python_2023_2024 :
 
 ![create our public repo](00_materials/09_docker/quay/create%20our%20public%20repository.png)
 
-As you can see, it creates an empty repository named quay.io/yourid/kto/mlops_python_2023_2024 :
+Comme vous pouvez le voir, cela crée un dépôt vide nommé quay.io/yourid/kto/mlops_python_2023_2024 :
 
 ![empty repo](00_materials/09_docker/quay/empty%20repo.png)
 
-Now we will push our image to this new repository.
+Maintenant nous allons pousser notre image vers ce nouveau dépôt.
 
 Réutilisez le compte robot que vous avez déjà créé. Attention, vous devez lui donner les droits d'admin à votre
 nouveau repository !!!
 
-We have to create new tags of our image :
+Nous devons créer de nouveaux tags pour notre image :
 
 ```bash
 docker tag <id of your image> quay.io/yourquayaccount/kto/mlops_python_2023_2024:latest
 ```
 
-And now, we push !
+Et maintenant, nous poussons !
 
 ```bash
 docker push quay.io/gthomas59800/kto/mlops_python_2023_2024:latest
 ```
 
-You should see these tags in your repository:
+Vous devriez voir ces tags dans votre dépôt :
 
 ![images pushed](00_materials/09_docker/quay/images%20are%20pushed.png)
 
-But it is not finished. We will not push our images with our hands ! You asked for them, we will use github actions!!!! Hurray !
+Mais ce n'est pas fini. Nous n'allons pas pousser nos images à la main ! Vous l'avez demandé, nous allons utiliser github actions !!!! Hourra !
 
 N'oubliez pas d'éteindre votre conteneur docker et de supprimer les images de votre codespace : 
 ```bash
@@ -492,9 +492,9 @@ docker rmi -f $(docker images -aq)
 docker image prune -f
 ```
 
-### g - Build automatically with github actions
+### g - Construire automatiquement avec github actions
 
-We will create a github action to go build and push automatically our new images!
+Nous allons créer une github action pour construire et pousser automatiquement nos nouvelles images !
 
 Vous devez ajouter à votre fichier `.github/workflows/cats-dogs-others.yaml`, de quoi builder votre nouvelle image.
 
@@ -677,6 +677,6 @@ jobs:
 
 ```
 
-This chapter comes to its end! Now we will deploy this image in the Cloud!!!
+Ce chapitre touche à sa fin ! Maintenant nous allons déployer cette image dans le Cloud !!!
 
 **Bravo ! Vous avez terminé cette partie. Veuillez me communiquer le lien vers votre image dans Quay.io par mail. (évaluations)**

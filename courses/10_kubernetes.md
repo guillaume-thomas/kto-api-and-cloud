@@ -13,44 +13,44 @@ non indexés.
 Changez maintenant de branche avec `git switch step07`.
 Créez désormais une branche avec votre nom : `git switch -c votrenom/step07`
 
-## Qu'est##ce que c'est ?
-## A quoi ça sert ?
+## Qu'est-ce que c'est ?
+## À quoi ça sert ?
 ## Comment ça fonctionne ?
 ## Manipulation sur OpenShift
-## Cloud act, cloud souverain et reversibilité
+## Cloud act, cloud souverain et réversibilité
 
 
-## 4 - Orchestrate our containers with Kubernetes
+## 4 - Orchestrer nos conteneurs avec Kubernetes
 
-Why we should orchestrate our containers?
+Pourquoi devrions-nous orchestrer nos conteneurs ?
 
-You can see documentation here: https://www.redhat.com/en/topics/containers/what-is-container-orchestration
+Vous pouvez consulter la documentation ici : https://www.redhat.com/en/topics/containers/what-is-container-orchestration
 
-To orchestrate our containers, we can use Kubernetes. This tool is major on the market. Kubernetes was firstly created
-by Google, develop in Go. Kubernetes is open sourced. In this course, we will use Openshift, which is a Kubernetes with
-more features. Openshift is open sourced too and developed by RedHat.
+Pour orchestrer nos conteneurs, nous pouvons utiliser Kubernetes. Cet outil est majeur sur le marché. Kubernetes a été initialement créé
+par Google, développé en Go. Kubernetes est open source. Dans ce cours, nous utiliserons Openshift, qui est un Kubernetes avec
+plus de fonctionnalités. Openshift est également open source et développé par RedHat.
 
-Documentation about Kubernetes here : https://www.redhat.com/en/topics/containers/what-is-kubernetes
+Documentation sur Kubernetes ici : https://www.redhat.com/en/topics/containers/what-is-kubernetes
 
-Your containers runtime is named as Pod in Kubernetes.
-Kubernetes is a cluster. Replication of Pods on several nodes is possible.
+Votre environnement d'exécution de conteneurs est nommé Pod dans Kubernetes.
+Kubernetes est un cluster. La réplication des Pods sur plusieurs nœuds est possible.
 
-To deploy your Pods, you can use a Kubernetes asset named Deployment. In this object, you can tell the images of the containers
-which compose your Pod, the resources for each of them, volumes, replicas, environment variables ...
+Pour déployer vos Pods, vous pouvez utiliser une ressource Kubernetes nommée Deployment. Dans cet objet, vous pouvez spécifier les images des conteneurs
+qui composent votre Pod, les ressources pour chacun d'entre eux, les volumes, les replicas, les variables d'environnement...
 
-Replicas allows you to scale up your pods count in order to treat more requests at the same time.
+Les replicas vous permettent d'augmenter le nombre de vos pods afin de traiter plus de requêtes en même temps.
 
-To make your service available on the network, you have to create another Kubernetes asset which is named Service. With
-it, you can tell that your service will be requested in http, you can bind the port of your webservices ect...
+Pour rendre votre service disponible sur le réseau, vous devez créer une autre ressource Kubernetes qui est nommée Service. Avec
+elle, vous pouvez indiquer que votre service sera sollicité en http, vous pouvez lier le port de vos webservices, etc...
 
-Finally, you can create a Route (Openshift specific) in order to create a proper URL for your webservice.
+Enfin, vous pouvez créer une Route (spécifique à Openshift) afin de créer une URL appropriée pour votre webservice.
 
-To create these assets, we can describe them in manifests. To do so, we will create a yaml file, `mlops-api.yaml`, in a new folder,
+Pour créer ces ressources, nous pouvons les décrire dans des manifestes. Pour ce faire, nous allons créer un fichier yaml, `mlops-api.yaml`, dans un nouveau dossier,
 `deploy`. Deploy doit être à la racine du projet.
 
 ![add_manifest.png](00_materials/10_kubernetes/add_manifest.png)
 
-This is a proposal of a manifest. Let's discuss on it :
+Voici une proposition de manifeste. Discutons-en :
 
 ```yaml
 apiVersion: apps/v1
@@ -116,27 +116,27 @@ spec:
   wildcardPolicy: None
 ```
 
-Now, we will use our manifest in order to deploy our application in The Cloud. To do so, we need a Kubernetes available in the Cloud.
+Maintenant, nous allons utiliser notre manifeste afin de déployer notre application dans le Cloud. Pour ce faire, nous avons besoin d'un Kubernetes disponible dans le Cloud.
 
-RedHat gives to all developers a free OpenShift development Sandbox, available in the Cloud. This Sandbox is available 30 days and is deleted automatically.
+RedHat offre à tous les développeurs un bac à sable OpenShift de développement gratuit, disponible dans le Cloud. Ce bac à sable est disponible 30 jours et est supprimé automatiquement.
 
-You can recreate a new Sandbox freely after this deletion. So now, let's create our Sandbox !
+Vous pouvez recréer un nouveau bac à sable gratuitement après cette suppression. Alors maintenant, créons notre bac à sable !
 
-Using your redhat developer account to create an Red Hat Developer Sandbox. You have to log yourself in : https://developers.redhat.com/
+Utilisez votre compte développeur RedHat pour créer un Red Hat Developer Sandbox. Vous devez vous connecter sur : https://developers.redhat.com/
 
-Now, click on the menu Developer Sandbox and on the button Explore the free Developer Sandbox.
+Maintenant, cliquez sur le menu Developer Sandbox et sur le bouton Explore the free Developer Sandbox.
 
 ![create openshift sandbox](00_materials/10_kubernetes/create%20an%20openshift%20sandbox.png)
 
-Then, click on the button Start your sandbox for free
+Ensuite, cliquez sur le bouton Start your sandbox for free
 
 ![start your sandbox](00_materials/10_kubernetes/start%20your%20sandbox.png)
 
-You can verify your account with Phone Validation if you have restricted access to your mails
+Vous pouvez vérifier votre compte avec la validation par téléphone si vous avez un accès restreint à vos e-mails
 
 ![phone validation](00_materials/10_kubernetes/using%20phone%20validation%20est%20possible.png)
 
-Installer le client openshift dans notre Codespace (found elements here https://docs.okd.io/4.10/cli_reference/openshift_cli/getting-started-cli.html):
+Installer le client openshift dans notre Codespace (éléments trouvés ici https://docs.okd.io/4.10/cli_reference/openshift_cli/getting-started-cli.html):
 
 ```bash
 mkdir oc
@@ -149,12 +149,12 @@ cd ../production/kubernetes
 oc apply -f mlops-api.yaml
 ```
 
-Now ! Let's test our application in the Cloud from Postman !
+Maintenant ! Testons notre application dans le Cloud depuis Postman !
 
 **Bravo, votre application fonctionne ! Veuillez me communiquer par mail la route vers votre service, ainsi qu'un jeton oAuth2, 
 que je puisse le tester (évaluations).**
 
-Do not forget to delete your project from openshift
+N'oubliez pas de supprimer votre projet d'openshift
 
 ```bash
 oc delete -f mlops-api.yaml
