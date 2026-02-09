@@ -233,7 +233,7 @@ Red Hat Developer et Quay.io. **MAIS IL EST POSSIBLE QUE CE NE SOIT PAS LE CAS. 
 - Nous avons maintenant toutes les informations nécessaires pour créer notre projet. Tapez la commande suivante dans votre terminal DevSpace :
 
 ```bash
-cookiecutter https://github.com/guillaume-thomas/kto-api-and-cloud`
+cookiecutter https://github.com/guillaume-thomas/kto-api-and-cloud
 ```
 
 
@@ -323,6 +323,15 @@ Prenons maintenant quelques instants pour observer la structure du projet. Vous 
 
 - Très bien, nous allons maintenant initialiser git dans ce dossier et le connecter à notre repository GitHub distant. 
 Commençons par configurer git avec votre nom et email. Définissons le nom de la branche par défaut.
+```bash
+git config --global init.defaultBranch main
+```
+
+- Initialisez git dans le dossier courant
+```bash
+git init
+```
+- Puis reprenez la configuration de votre repo git local
 ```bash
 git config init.defaultBranch main
 ```
