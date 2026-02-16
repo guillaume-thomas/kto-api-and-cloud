@@ -574,6 +574,8 @@ git pull --rebase
 
 ![106.png](img/106.png)
 
+Pour rappel : `git log --oneline --decorate --graph`
+
 > ⚠️ **Évaluation** : **Partagez par mail un screenshot de votre `git log`. Indiquez bien également 
 > le lien vers votre repo github.**
 
