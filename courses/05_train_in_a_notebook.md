@@ -327,8 +327,9 @@ Et voilà ! Vous avez entraîné votre première IA avec un notebook et constate
 les urls de connexion et mot de passe vers votre minio.
 
 ![215.png](./img/215.png)
-> ⚠️ **Évaluation** : **Veuillez commiter et pousser sur votre repository github vos modifications sur mail et surtout, prévenez
-> le professeur par mail que vous avez terminé cette partie !**
+> ⚠️ **Évaluation** : **Veuillez commiter et pousser sur votre repository github vos modifications sur main et surtout, prévenez
+> le professeur par mail que vous avez terminé cette partie ! Envoyez également votre Notebook complet avec les traces 
+> d'exécutions par mail.**
 
 > ⚠️ **Attention, pousser des informations sensibles sur votre repository git, donnera lieu à un malus.**
 
