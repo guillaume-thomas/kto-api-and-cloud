@@ -898,18 +898,47 @@ entry_points:
 En fait, ici, nous avons indiqué à MLflow le chemin du repository où est stockée notre image. Elle ne sera pas sur votre machine
 de développement, mais directement sur Quay.
 
-Bravo ! Cette partie est difficile, vous avez assuré ! Mais, comme vous avez pu le constater, nous n'avons pas encore 
-lancé notre projet dans kto-mlflow. En fait, nous allons le faire dans le prochain chapitre, car faire tout ceci à la main
-est très fastidieux. Le refaire à chaque fois va vous donner beaucoup de travail. C'est pourquoi, automatiser tout ce 
-process est INDISPENSABLE ! Voyons maintenant comment faire !
 
-## BONUS, le faire tout de même à la main dans Codespace
+#### Création d'un Github codespace pour exécuter notre projet dans kto-mlflow
 
-Je rédige cette partie, en fonction du temps que vous avez, nous allons le faire, ce qui donnera lieu à des points bonus.
+Nous allons dans cette partie exécuter le projet mlflow que nous avons créé dans kto-mlflow, soit dans Kubernetes. 
+Pour cela, nous allons avoir besoin de construire des images Docker. Devspace est assez limité pour le faire, nous allons donc plutôt utiliser un Github Codespace. 
 
-D'abord, il faut vous créer un Github Codespace, car notre Devspace sera un peu limité.
+Github Codespaces est un environnement de développement en ligne proposé par Github. Il permet de créer des environnements 
+de développement complets dans le cloud, avec la possibilité d'installer des outils et des extensions et d'accéder 
+à un terminal pour exécuter des commandes. C'est un excellent outil pour travailler sur des projets qui nécessitent 
+des configurations spécifiques ou pour collaborer avec d'autres développeurs.
 
-Puis, démarrer kto mlflow avec Dailyclean. Vous pouvez vous reporter à la documentation (il faut retrouver le lien).
+Github Codespaces est intégré à Github, ce qui facilite la gestion de votre code et de vos branches. Vous pouvez créer 
+un Codespace à partir de n'importe quel dépôt Github, ce qui vous permet de travailler sur votre projet sans 
+avoir à configurer votre environnement local.
+
+Github Codespace est gratuit pour les utilisateurs de Github, avec des limitations sur le nombre d'heures d'utilisation par mois (60 heures). 
+
+Pour créer un Codespace, rendez-vous sur la page principale de votre dépôt Github. Cliquez sur le bouton vert Code, 
+puis sur Open with Codespaces et enfin sur New codespace. Laissez le temps à Github de créer votre Codespace, cela peut prendre quelques minutes.
+
+> ⚠️ **Attention** : Crééez votre Codespace à partir de la branche `main` de votre dépôt, car c'est dans cette branche que vous avez poussé vos dernières modifications.
+
+![270.png](./img/270.png)
+![271.png](./img/271.png)
+![272.png](./img/272.png)
+
+Comme vous pouvez le constater, l'interface est très similaire à celle de Visual Studio Code, avec un terminal intégré. 
+Vous pouvez utiliser ce terminal pour exécuter des commandes, comme si vous étiez sur votre machine locale ou sur Devspace.
+
+Ouvrez un terminal et vérifiez qu'uv est bien installé en exécutant la commande `uv --version`. Vous devriez voir la 
+version d'uv s'afficher.
+
+![273.png](./img/273.png)
+
+Installez bien toutes les dépendances nécessaires à l'exécution de votre projet mlflow, en exécutant la commande `uv sync --all-groups`.
+
+![274.png](./img/274.png)
+
+Puis, démarrer kto mlflow avec [Dailyclean](./04_scoping_data_prep_label.md#présentation-de-dailyclean-et-comment-démarrer-kto-mlflow)
+
+Créez un nouveau script dans le répertoire `./scripts/` de votre projet, que vous appellerez `test_kto_mlflow.sh`. Copiez-y le contenu suivant :
 
 ```bash
 docker login -u="QUAY_ROBOT_USERNAME_A_SAISIR" -p="QUAY_ROBOT_TOKEN_A_SAISIR" quay.io # <--- mettez ici les informations de votre robot quay.io
@@ -932,6 +961,68 @@ uv run mlflow run ../src/titanic/training -P path=all_titanic.csv --experiment-n
 
 ```
 
-Ne pas oublier de donner les droits chmod -R 777 ./scripts
+Il n'est pas impossible que votre navigateur Chrome vous demande les droits pour copier et coller des élements dans 
+votre Codespace. Acceptez, comme montré ci-dessous :
 
-Une fois que c'est fait, ne pas oublier le docker system prune
+![275.png](./img/275.png)
+
+Comme vous pouvez le constater, le script est à trous. Il vous faut renseigner les différentes variables d'environnement 
+et les différentes informations de connexion à votre cluster OpenShift et à votre compte Quay.io, mais aussi les url de 
+vos services mlflow et minio. Toutes ces informations sont disponibles dans votre plateforme kto-mlflow, 
+dans la section `Networking` puis `Routes`.
+
+Afin de récupérer les informations de connexion vers votre cluster Openshift, vous pouvez vous rendre sur votre Sandbox, sélectionnez le 
+menu Copy Login Command, puis récupérer vos informations de connexion dans la commande de connexion OpenShift, comme montré ci-dessous :
+
+![276.png](./img/276.png)
+![277.png](./img/277.png)
+![278.png](./img/278.png)
+
+Pour récupérer les informations de connexion vers votre compte Quay.io, rendez-vous sur [Quay.io](https://quay.io/), 
+connectez-vous, puis cliquez sur votre profil en haut à droite et enfin sur Account Settings. 
+Vous trouverez les informations de votre compte Robot dans la section Robot Accounts, comme montré ci-dessous :
+
+
+![280.png](./img/280.png)
+![281.png](./img/281.png)
+![279.png](./img/279.png)
+
+Également, renseignez les user et mot de passe pour minio.
+
+Enfin, n'oubliez pas de donner les droits d'exécution à votre script avec la commande suivante : 
+```bash
+chmod +x ./scripts/test_kto_mlflow.sh
+```
+
+Maintenant éxecutez votre script avec la commande suivante : 
+```bash
+./scripts/test_kto_mlflow.sh
+```
+
+Vous devriez voir dans votre terminal que votre image est en train de se construire, puis de se pousser sur Quay.io.
+Vous devriez ensuite voir que MLflow est en train de créer un Job Kubernetes à partir de votre image et de votre template,
+puis de lancer ce Job. Vous pouvez également aller vérifier dans votre cluster OpenShift que le Job a bien été créé et qu'il est en cours d'exécution.
+
+![282.png](./img/282.png)
+![283.png](./img/283.png)
+![284.png](./img/284.png)
+![285.png](./img/285.png)
+![286.png](./img/286.png)
+![287.png](./img/287.png)
+
+
+Une fois que c'est fait, n'oubliez pas de nettoyer votre Codespace avec la commande :
+```bash
+docker system prune
+```
+
+> ⚠️ **Evaluation** : Merci de me communiquer par mail les logs de votre terminal lors de l'exécution de votre script 
+> `test_kto_mlflow.sh`, comme présenté ci-dessus. Attention, ne commitez pas votre script `test_kto_mlflow.sh` avec vos 
+> informations de connexion personnelles, mais plutôt avec des placeholders, comme montré ci-dessus. Vous n'êtes pas 
+> obligé de le commiter, mais si vous le faites, faites attention.
+
+Bravo ! Cette partie est difficile, mais vous avez assuré ! Néanmoins, comme vous avez pu le constater, 
+lancer notre projet dans kto-mlflow peut être pénible, nécessite quelques outils tel que docker pour fonctionner et
+demande de faire quelques commandes. Faire tout ceci à la main
+est très fastidieux. Le refaire à chaque fois va vous donner beaucoup de travail. C'est pourquoi, automatiser tout ce
+process est INDISPENSABLE pour éviter de faire des erreurs et gagner du temps ! Voyons maintenant comment faire !
