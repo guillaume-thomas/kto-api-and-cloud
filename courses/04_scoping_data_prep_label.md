@@ -218,7 +218,7 @@ chmod -R 777 ./scripts
 
 - Lancez le script d'installation de kto-mlflow
 ```bash
-./scripts/install_kto_mlflow.sh
+./scripts/install-mlflow.sh
 ```
 - Patientez une dizaine de minutes le temps que tous les pods se déploient
 
