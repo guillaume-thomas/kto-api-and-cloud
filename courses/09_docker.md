@@ -11,10 +11,41 @@ Sollicitez le professeur, car il est possible que votre contrôle continue en so
 
 > ⚠️ **Attention** : En cas de doute, sollicitez le professeur, car il est possible que votre contrôle continue en soit affecté.
 
+Pour rappel, les commandes utiles sont :
+```bash
+git add .
+git commit -m "your message"
+git push origin main
+```
+
 ## Qu'est ce que c'est ?
+
+Docker est un logiciel de conteneurisation open source qui permet d'empaqueter une application et ses dépendances dans un conteneur isolé. C'est l'outil le plus populaire pour créer et gérer des conteneurs.
+
 ## A quoi ça sert ?
+
+Docker sert à :
+- Garantir que votre application fonctionne de la même façon sur votre machine, en production et chez vos collègues
+- Isoler les applications entre elles (chaque conteneur a son propre environnement)
+- Faciliter le déploiement (une seule commande pour lancer votre application)
+- Économiser des ressources par rapport aux machines virtuelles
+
 ## Comment ça fonctionne ?
+
+Docker fonctionne avec 3 concepts clés :
+- **Dockerfile** : fichier texte contenant les instructions pour construire votre image
+- **Image** : template immuable contenant votre application et ses dépendances (comme une photo figée)
+- **Conteneur** : instance en exécution d'une image (comme un processus vivant)
+
+Le moteur Docker (daemon) gère la création et l'exécution des conteneurs sur votre machine.
+
 ## Manipulation de Docker
+
+Dans ce chapitre, vous allez apprendre à :
+- Écrire un Dockerfile pour votre API Titanic
+- Construire une image Docker
+- Pousser cette image sur un registre (Quay.io)
+- Automatiser tout cela dans votre pipeline GitHub Actions
 
 # Deploy
 

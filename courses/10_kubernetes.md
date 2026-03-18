@@ -8,19 +8,45 @@ Si c'est le cas, vérifiez que vous avez bien sauvegardé votre travail lors de 
 votre travail.
 Sollicitez le professeur, car il est possible que votre contrôle continue en soit affecté.
 
-Sinon, annulez toutes vos modifications avec `git reset --hard HEAD`. Supprimez potentiellement les fichiers
-non indexés.
-Changez maintenant de branche avec `git switch step07`.
-Créez désormais une branche avec votre nom : `git switch -c votrenom/step07`
+> ⚠️ **Attention** : En cas de doute, sollicitez le professeur, car il est possible que votre contrôle continue en soit affecté.
 
-## Qu'est-ce que c'est ?
-## À quoi ça sert ?
-## Comment ça fonctionne ?
-## Manipulation sur OpenShift
-## Cloud act, cloud souverain et réversibilité
+Pour rappel, les commandes utiles sont :
+```bash
+git add .
+git commit -m "your message"
+git push origin main
+```
+
+## 1 - Qu'est-ce que c'est ?
+
+Kubernetes est un orchestrateur de conteneurs open source créé par Google. OpenShift est une distribution Kubernetes développée par RedHat avec des fonctionnalités supplémentaires (interface web, gestion des routes, sécurité renforcée...).
+
+## 2 - À quoi ça sert ?
+
+Kubernetes permet de :
+- Déployer vos applications conteneurisées automatiquement
+- Gérer la haute disponibilité (si un conteneur tombe, il redémarre automatiquement)
+- Scaler vos applications (augmenter/diminuer le nombre de réplicas selon la charge)
+- Gérer le réseau et l'exposition de vos services
+
+## 3 - Comment ça fonctionne ?
+
+Kubernetes utilise une architecture déclarative basée sur des manifestes YAML :
+- **Pod** : votre conteneur en exécution (plus petite unité déployable)
+- **Deployment** : définit votre application (image, replicas, ressources...)
+- **Service** : expose votre application sur le réseau interne du cluster
+- **Route** (OpenShift) : crée une URL publique pour accéder à votre service depuis l'extérieur
+
+## 4 - Manipulation sur OpenShift
+
+Dans ce cours, vous utiliserez votre sandbox OpenShift pour déployer vos applications. Les commandes `kubectl` et `oc` permettent d'interagir avec le cluster. Nous verrons comment déployer automatiquement via GitHub Actions au chapitre suivant.
+
+## 5 - Cloud act, cloud souverain et réversibilité
+
+Le **Cloud Act** (2018) permet au gouvernement américain d'accéder aux données stockées par des entreprises américaines, même si elles sont hébergées en Europe. Pour contourner ce problème, certaines organisations optent pour un **cloud souverain** (fournisseurs européens, données en Europe). La **réversibilité** garantit que vous pouvez récupérer vos données et migrer vers un autre provider sans être enfermé technologiquement (éviter le vendor lock-in).
 
 
-## 4 - Orchestrer nos conteneurs avec Kubernetes
+## 6 - Orchestrer nos conteneurs avec Kubernetes
 
 Pourquoi devrions-nous orchestrer nos conteneurs ?
 
@@ -45,10 +71,10 @@ elle, vous pouvez indiquer que votre service sera sollicité en http, vous pouve
 
 Enfin, vous pouvez créer une Route (spécifique à Openshift) afin de créer une URL appropriée pour votre webservice.
 
-Pour créer ces ressources, nous pouvons les décrire dans des manifestes. Pour ce faire, nous allons créer un fichier yaml, `mlops-api.yaml`, dans un nouveau dossier,
-`deploy`. Deploy doit être à la racine du projet.
+Pour créer ces ressources, nous pouvons les décrire dans des manifestes. Ils sont déjà écrits en YAML pour vous dans 
+le dossier `./k8s/api/api.yaml`. 
 
-![add_manifest.png](00_materials/10_kubernetes/add_manifest.png)
+![365.png](./img/365.png)
 
 Voici une proposition de manifeste. Discutons-en :
 
@@ -56,27 +82,20 @@ Voici une proposition de manifeste. Discutons-en :
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mlops-api
+  name: titanic-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mlops-api
+      app: titanic-api
   template:
     metadata:
       labels:
-        app: mlops-api
+        app: titanic-api
     spec:
       containers:
-        - name: mlops-api
-          image: quay.io/gthomas59800/kto/mlops_python_2023_2024
-          env:
-            - name: OAUTH2_ISSUER
-              value: https://dev-57n2oiz6kv1zyfh6.eu.auth0.com/
-            - name: OAUTH2_AUDIENCE
-              value: https://gthomas-cats-dogs.com
-            - name: OAUTH2_JWKS_URI
-              value: .well-known/jwks.json
+        - name: titanic-api
+          image: quay.io/kto_gthomas/titanic/api:latest
           ports:
             - containerPort: 8080
           resources:
@@ -90,10 +109,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mlops-api-service
+  name: titanic-api-service
 spec:
   selector:
-    app: mlops-api
+    app: titanic-api
   ports:
     - port: 8080
       name: http-port
@@ -102,11 +121,11 @@ spec:
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: mlops-api
+  name: titanic-api
 spec:
   to:
     kind: Service
-    name: mlops-api-service
+    name: titanic-api-service
     weight: 100
   port:
     targetPort: http-port
@@ -116,46 +135,18 @@ spec:
   wildcardPolicy: None
 ```
 
-Maintenant, nous allons utiliser notre manifeste afin de déployer notre application dans le Cloud. Pour ce faire, nous avons besoin d'un Kubernetes disponible dans le Cloud.
+Maintenant, nous allons utiliser notre manifeste afin de déployer notre application dans le Cloud. 
+Pour ce faire, nous avons besoin d'un Kubernetes disponible dans le Cloud.
 
-RedHat offre à tous les développeurs un bac à sable OpenShift de développement gratuit, disponible dans le Cloud. Ce bac à sable est disponible 30 jours et est supprimé automatiquement.
+RedHat offre à tous les développeurs un bac à sable OpenShift de développement gratuit, disponible dans le Cloud. 
+Ce bac à sable est disponible 30 jours et est supprimé automatiquement.
 
-Vous pouvez recréer un nouveau bac à sable gratuitement après cette suppression. Alors maintenant, créons notre bac à sable !
+Oui, vous l'aviez bien compris, il s'agit de votre sandbox avec laquelle vous travaillez depuis le début du cours. 
 
-Utilisez votre compte développeur RedHat pour créer un Red Hat Developer Sandbox. Vous devez vous connecter sur : https://developers.redhat.com/
+Nous allons utiliser ce cluster pour déployer notre application.
 
-Maintenant, cliquez sur le menu Developer Sandbox et sur le bouton Explore the free Developer Sandbox.
+Dans le chapitre suivant, nous allons déployer votre application dans votre cluster OpenShift mais directement depuis 
+votre github action.
 
-![create openshift sandbox](00_materials/10_kubernetes/create%20an%20openshift%20sandbox.png)
-
-Ensuite, cliquez sur le bouton Start your sandbox for free
-
-![start your sandbox](00_materials/10_kubernetes/start%20your%20sandbox.png)
-
-Vous pouvez vérifier votre compte avec la validation par téléphone si vous avez un accès restreint à vos e-mails
-
-![phone validation](00_materials/10_kubernetes/using%20phone%20validation%20est%20possible.png)
-
-Installer le client openshift dans notre Codespace (éléments trouvés ici https://docs.okd.io/4.10/cli_reference/openshift_cli/getting-started-cli.html):
-
-```bash
-mkdir oc
-cd oc
-curl https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz --output oc.tar.gz
-tar xvf oc.tar.gz
-pwd
-PATH=$PATH:/workspaces/MLOpsPython/oc
-cd ../production/kubernetes
-oc apply -f mlops-api.yaml
-```
-
-Maintenant ! Testons notre application dans le Cloud depuis Postman !
-
-**Bravo, votre application fonctionne ! Veuillez me communiquer par mail la route vers votre service, ainsi qu'un jeton oAuth2, 
-que je puisse le tester (évaluations).**
-
-N'oubliez pas de supprimer votre projet d'openshift
-
-```bash
-oc delete -f mlops-api.yaml
-```
+> ⚠️ **Attention** : N'oubliez pas de sauvegarder votre travail avant de continuer, car vous allez devoir faire un 
+`git push` pour que votre application soit déployée dans le cluster OpenShift.

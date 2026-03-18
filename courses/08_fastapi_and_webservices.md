@@ -734,7 +734,7 @@ def infer(passenger: Passenger, token: str = Depends(verify_token("api:read"))) 
 
 Pour tester ce nouveau code, vous devez d'abord ajouter cette variable d'environnement :
 - **OAUTH2_DOMAIN**: Le nom de domain de l'émetteur qui est le Serveur d'Autorisation. Celui-ci est disponible dans la 
-requête de test de votre API dans Auth0. Il est aussi disponible dans les paramètres de votre API dans Auth0. Il doit ressembler à ça : `https://dev-1234567.eu.auth0.com/`
+requête de test de votre API dans Auth0. Il est aussi disponible dans les paramètres de votre API dans Auth0. Il doit ressembler à ça : `dev-1234567.eu.auth0.com`
 
 Pour ce faire, vous pouvez utiliser la commande linux `export`
 
