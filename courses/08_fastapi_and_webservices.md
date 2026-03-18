@@ -759,7 +759,7 @@ utilisant un token oAuth2 valide et envoyez-la à votre professeur par mail (exe
 
 N'oubliez pas d'arrêter votre serveur uvicorn !!
 
-### d - Tests unitaires
+### e - Tests unitaires
 
 Dans ce chapitre, nous allons exécutez les tests unitaires sur notre API. Les tests unitaires sont des tests qui permettent de tester une unité de code de manière isolée.
 Ils ont déjà été vus dans le chapitre sur les tests unitaires, mais nous allons les appliquer à notre API cette fois.

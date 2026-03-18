@@ -9,10 +9,7 @@ Si c'est le cas, vérifiez que vous avez bien sauvegardé votre travail lors de 
 votre travail.
 Sollicitez le professeur, car il est possible que votre contrôle continue en soit affecté.
 
-Sinon, annulez toutes vos modifications avec `git reset --hard HEAD`. Supprimez potentiellement les fichiers
-non indexés.
-Changez maintenant de branche avec `git switch step06`.
-Créez désormais une branche avec votre nom : `git switch -c votrenom/step06`
+> ⚠️ **Attention** : En cas de doute, sollicitez le professeur, car il est possible que votre contrôle continue en soit affecté.
 
 ## Qu'est ce que c'est ?
 ## A quoi ça sert ?
@@ -201,10 +198,9 @@ En écrivant un Dockerfile, nous allons utiliser des instructions pour construir
 Dans cette section, nous allons essayer de faire la même chose que nous avons faite dans le terrain de jeu précédent, mais directement depuis 
 une image Docker personnalisée.
 
-D'abord, nous devons créer ce fichier : Dockerfile
+D'abord, identifiez ce fichier : `./k8s/api/Dockerfile`
 
-Créez le à la racine de votre projet : 
-
+![360.png](img/360.png)
 
 Nous utiliserons une image python officielle de Docker comme base de notre image. Et nous allons construire des couches personnalisées dessus.
 
@@ -215,18 +211,21 @@ Elle nous donne toutes les images python créées par la communauté. L'une d'en
 Nous commencerons notre construction avec cette image. Pour ce faire, dans notre Dockerfile, nous ajoutons cette instruction :
 
 ```dockerfile
-FROM python:3.11.2-bullseye
+FROM python:3.13-slim
 ```
 
-Cette instruction indique que nous construisons notre image DEPUIS python:3.11.2-bullseye comme base.
+Cette instruction indique que nous construisons notre image DEPUIS FROM python:3.13-slim comme base.
 
-D'accord ! C'est un bon début ! Maintenant construisons cette image et créons un conteneur depuis celle-ci !
+D'accord ! C'est un bon début ! Maintenant, si nous construisons cette image et créons un conteneur depuis celle-ci !
 
 ```bash
 docker build -t mlopspython/first-image .
 
 docker run -it mlopspython/first-image
 ```
+
+> ⚠️ **Attention** : Depuis Devspaces, travailler avec Docker peut être compliqué. Si vous avez des problèmes 
+pour construire votre image, essayez de le faire depuis un github Codespace. Sinon, suivez les explications du professeur.
 
 Lorsque vous lancez la commande docker run, comme vous pouvez le voir, elle ouvre l'interpréteur python dans notre conteneur.
 C'est parce que l'image est construite comme ça.
@@ -339,9 +338,10 @@ Maintenant, essayons de créer votre image Docker. Vous pouvez regarder le Makef
 N'oubliez pas d'EXPOSER le port de votre Webservice (petit rappel, nous l'avons défini sur 8080), et de définir un ENTRYPOINT final.
 
 N'oubliez pas qu'il faut télécharger le modèle depuis MLflow. Nous aurons donc encore besoin
-de MLflow. Pour ne pas polluer l'image finale, nous allons utiliser la fonctionnalité de multi-staging de docker.
+de MLflow. Pour ne pas polluer l'image finale, nous pouvons utiliser la fonctionnalité de multi-staging de docker.
 
-Le **multi-stage build** est une fonctionnalité de Docker qui permet de construire des images Docker plus efficaces et plus légères. Il est utile pour quiconque a du mal à optimiser les Dockerfiles tout en les gardant faciles à lire et à maintenir¹.
+Le **multi-stage build** est une fonctionnalité de Docker qui permet de construire des images Docker plus efficaces 
+et plus légères. Il est utile pour quiconque a du mal à optimiser les Dockerfiles tout en les gardant faciles à lire et à maintenir¹.
 
 Avec les **multi-stage builds**, vous utilisez plusieurs instructions `FROM` dans votre Dockerfile. 
 Chaque instruction `FROM` peut utiliser une base différente, et chacune d'entre elles commence une nouvelle étape 
@@ -349,7 +349,7 @@ de la construction. Vous pouvez copier sélectivement des artefacts d'une étape
 vous tout ce que vous ne voulez pas dans l'image finale (le dernier FROM).
 
 
-Voici une proposition :
+Voici un exemple :
 
 ```dockerfile
 ARG MLFLOW_RUN_ID
@@ -402,20 +402,34 @@ EXPOSE 8080
 ENTRYPOINT ["python3", "boot.py"]
 ```
 
-Maintenant, nous construisons et exécutons notre image.
+Commentons cet exemple.
 
-N'oubliez pas d'exporter vos variables d'environnement :
-- $MLFLOW_RUN_ID : Prenez le run id d'un de vos run, le plus à jour :-)
+Mais pour notre WS du titanic, nous allons faire un peu plus simple. Nous allons construire une image qui contient 
+notre API et qui contiendra notre modèle téléchargé depuis MLflow par la pipeline CI/CD.
 
-![last_run.png](00_materials/09_docker/last_run.png)
-![last_run_id.png](00_materials/09_docker/last_run_id.png)
+Cela donne donc une image plus légère, plus rapide à construire, et qui ne contient que ce dont nous avons besoin pour exécuter notre API.
 
-- $MLFLOW_TRACKING_URI : L'url de votre MLflow
-- $MLFLOW_S3_ENDPOINT_URL : L'url de votre minio
-- $AWS_ACCESS_KEY_ID : minio
-- $AWS_SECRET_ACCESS_KEY : minio123
+```dockerfile
+FROM python:3.13-slim
 
-Maintenant, jouez les commandes suivantes :
+WORKDIR /app
+
+RUN pip install --no-cache-dir uv
+COPY pyproject.toml uv.lock .python-version ./
+COPY ./src/titanic/api ./src/titanic/api
+
+RUN uv sync -n --group api
+
+EXPOSE 8080
+
+ENTRYPOINT ["uv", "-n", "run", "--no-sync", "api"]
+
+```
+
+Maintenant, nous pourrions construire et exécuter notre image. Je vous laisse ici des instructions pour le faire 
+manuellement en exemple, mais nous allons automatiser tout cela dans la section suivante.
+
+Voici les commandes permettant de construire et d'exécuter l'image d'exemple de tout à l'heure (chat et chien) :
 ```bash
 docker build -t local/mlops_python_2023_2024 --build-arg MLFLOW_RUN_ID=$MLFLOW_RUN_ID --build-arg MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI --build-arg MLFLOW_S3_ENDPOINT_URL=$MLFLOW_S3_ENDPOINT_URL --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY .
 
@@ -434,17 +448,7 @@ Voici un exemple complet :
 docker run -d -p 8080:8080 -e OAUTH2_ISSUER="https://dev-ujjk4qhv7rn48y6w.eu.auth0.com/" -e OAUTH2_AUDIENCE="https://gthomas-cats-dogs.com" -e OAUTH2_JWKS_URI=".well-known/jwks.json" mlops_python_2022_2023:1.0.0
 ```
 
-Maintenant, essayons notre Service depuis Postman !
-
-N'oubliez pas de changer la visibilité du port 8080 de Codespace en Public.
-
-Générez un token oAuth2 depuis Auth0.
-
-Et maintenant vous pouvez tester votre API :
-
-![test](00_materials/09_docker/playing%20with%20docker/testing%20container%20from%20postman.png)
-
-Pour finir ce chapitre, nous devons publier notre image dans un registre.
+Pour finir ce chapitre, nous devons publier notre image dans un registre et automatiser tout ça dans notre github action.
 
 ### f - Pousser l'image vers le registre
 
@@ -454,38 +458,41 @@ Ensuite, nous devons créer un dépôt Public sur Quay pour pousser notre image 
 
 ![create repo](00_materials/09_docker/quay/create%20a%20repository.png)
 
-Maintenant nous créons un nouveau dépôt public nommé kto/mlops_python_2023_2024 :
+Maintenant nous créons un nouveau dépôt public nommé titanic/api :
 
 ![create our public repo](00_materials/09_docker/quay/create%20our%20public%20repository.png)
 
-Comme vous pouvez le voir, cela crée un dépôt vide nommé quay.io/yourid/kto/mlops_python_2023_2024 :
+Comme vous pouvez le voir, cela crée un dépôt vide nommé quay.io/yourid/titanic/api :
 
 ![empty repo](00_materials/09_docker/quay/empty%20repo.png)
 
-Maintenant nous allons pousser notre image vers ce nouveau dépôt.
+Maintenant nous pourrions pousser notre image vers ce nouveau dépôt.
 
 Réutilisez le compte robot que vous avez déjà créé. Attention, vous devez lui donner les droits d'admin à votre
 nouveau repository !!!
 
-Nous devons créer de nouveaux tags pour notre image :
+![362.png](img/362.png)
+
+Nous pourrions créer de nouveaux tags pour notre image :
 
 ```bash
-docker tag <id of your image> quay.io/yourquayaccount/kto/mlops_python_2023_2024:latest
+docker tag <id of your image> quay.io/yourquayaccount/titanic/api:latest
 ```
 
-Et maintenant, nous poussons !
+Et maintenant, nous pourrions pousser avec :
 
 ```bash
-docker push quay.io/gthomas59800/kto/mlops_python_2023_2024:latest
+docker push quay.io/yourquayaccount/titanic/api:latest
 ```
 
 Vous devriez voir ces tags dans votre dépôt :
 
 ![images pushed](00_materials/09_docker/quay/images%20are%20pushed.png)
 
-Mais ce n'est pas fini. Nous n'allons pas pousser nos images à la main ! Vous l'avez demandé, nous allons utiliser github actions !!!! Hourra !
+Mais ce n'est pas fini. Nous n'allons pas pousser nos images à la main ! 
+Vous l'avez demandé, nous allons utiliser github actions !!!! Hourra !
 
-N'oubliez pas d'éteindre votre conteneur docker et de supprimer les images de votre codespace : 
+Si vous avez manipulé depuis Codespaces, n'oubliez pas d'éteindre votre conteneur docker et de supprimer les images de votre codespace : 
 ```bash
 docker rm -vf $(docker ps -aq)
 docker rmi -f $(docker images -aq)
@@ -496,187 +503,308 @@ docker image prune -f
 
 Nous allons créer une github action pour construire et pousser automatiquement nos nouvelles images !
 
-Vous devez ajouter à votre fichier `.github/workflows/cats-dogs-others.yaml`, de quoi builder votre nouvelle image.
+Vous devez ajouter à votre fichier `.github/workflows/ct-ci-cd.yaml`, de quoi builder votre nouvelle image.
 
 Attention, il y a une petite complexité ici. En effet, si l'on veut télécharger le dernier modèle généré, il faut que l'on
-soit en mesure de récupérer le dernier run depuis votre kto-mlflow.
+soit en mesure de récupérer le model du dernier run depuis votre kto-mlflow.
 
 Je vous propose d'utiliser un script Python pour faire cette recherche. En effet, MLflow dispose d'une API de recherche
-qui permet de récupérer certaines informations. Donc un identifiant de run.
+qui permet de récupérer certaines informations. Donc le lien de téléchargement d'un modèle.
 
-Dans `.github/workflows`, ajoutez un script `search_mlflow.py` :
+Dans `./src/titanic/ci`, vous trouverez un script qui vous permet de le faire, `search_mlflow.py` : 
 ```python
+import logging
+
+import fire
 import mlflow
+from mlflow.entities import Run
 
 
-def search_last_run_by_experiment_name(experiment_name: str):
-    current_experiment = dict(mlflow.get_experiment_by_name(experiment_name))
-    experiment_id = current_experiment['experiment_id']
-    df = mlflow.search_runs([experiment_id],
-                            filter_string="attributes.status = 'FINISHED'",
-                            max_results=1,
-                            order_by=["attributes.end_time DESC"])
-    return df.loc[0, 'run_id']
+def get_last_model_uri(experiment_name: str) -> str:
+  logging.warning(f"experiment_name: {experiment_name}")
+  current_experiment = dict(mlflow.get_experiment_by_name(experiment_name))
+  experiment_id = current_experiment['experiment_id']
+  runs: list[Run] = mlflow.search_runs(
+    [experiment_id],
+    filter_string="attributes.status = 'FINISHED'",
+    max_results=1,
+    order_by=["attributes.end_time DESC"],
+    output_format="list"
+  )
+  run = mlflow.get_run(runs[0].info.run_id)
+  logging.warning(f"Found model id: {run.outputs.model_outputs[0].model_id}")
+  model_uri = f"models:/{run.outputs.model_outputs[0].model_id}"
+  logging.warning(f"Returning: {model_uri}")
+  return model_uri
+
+
+if __name__ == "__main__":
+  fire.Fire(get_last_model_uri)
+
 
 ```
 
-Ce script permet de récupérer l'identifiant du dernier run d'une expérience donnée. Nous allons donc l'utiliser pour
-ajouter le run id en argument de la construction de notre image docker. Dans l'étape de lancement du train, ajoutez les lignes
+![361.png](img/361.png)
+
+Ce script permet de récupérer l'url du modèle du dernier run d'une expérience donnée. Nous allons donc l'utiliser pour
+télécharger notre modèle. Ajoutez l'étape suivante, avant celle d'extinction de kto-mlflow, dans votre github action : 
 suivantes :
 ```yaml
-          echo "Get last finished mlflow run"
-          cd ../../.github/workflows
-          export MLFLOW_RUN_ID=$(python -c 'import search_mlflow; print(search_mlflow.search_last_run_by_experiment_name("cats-dogs-other"))') 
-          echo "MLFLOW_RUN_ID=$MLFLOW_RUN_ID" >> "$GITHUB_ENV"
+- name: Download model artifact
+  run: |
+    export MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_ROUTE_URL
+    export MLFLOW_S3_ENDPOINT_URL=$MINIO_API_ROUTE_URL
+    export AWS_ACCESS_KEY_ID="${{vars.AWS_ACCESS_KEY_ID}}"
+    export AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}"
+    export ARTIFACT_URI=$(uv run -m titanic.ci.search_mlflow --experiment-name ${{ env.EXPERIMENT_NAME }})
+
+    echo "ARTIFACT_URI=$ARTIFACT_URI"
+    uv run mlflow artifacts download --artifact-uri $ARTIFACT_URI -d ./src/titanic/api/resources/
+
+    # could be : uv run mlflow artifacts download -r $MLFLOW_RUN_ID -a model.pkl -d ./src/titanic/api/resources/
 ```
 
-Cela donne donc le fichier suivant : 
+Cela donne donc le fichier suivant :
 ```yaml
-name: Cats and dogs CI/CD
-on: 
+name: Train KTO Titanic model and Deploy API
+
+on:
   push:
     branches:
-      - step**
+      - main
+    paths:
+      - 'src/titanic/api/**'
+      - 'src/titanic/training/**'
+      - 'src/titanic/ci/**'
+      - '/tests/api/**'
+      - '/tests/training/**'
+      - '/tests/ci/**'
+      - 'k8s/experiment/**'
+      - 'k8s/api/**'
+      - '.github/workflows/ct-ci-cd.yaml'
+  pull_request:
+    branches:
+      - main
+
+env:
+  EXPERIMENT_NAME: kto-titanic
+  EXPERIMENT_IMAGE_NAME: quay.io/kto_gthomas/titanic/experiment
+  API_IMAGE_NAME: quay.io/kto_gthomas/titanic/api
+  API_ROUTE_NAME: titanic-api
+  DAILYCLEAN_ROUTE_NAME: dailyclean
+  MINIO_API_ROUTE_NAME: minio-api
+  MLFLOW_TRACKING_ROUTE_NAME: mlflow
 
 jobs:
   train:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@v3
         with:
-          python-version: 3.11
-      - name: Upgrade pip, install packages and run unittests
+          python-version: 3.13
+      - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          ./init_packages.sh
-          pip install -r ./cats_dogs_other/requirements.txt
-          pip install -r ./cats_dogs_other/label/requirements.txt
-          pip install -r ./cats_dogs_other/api/requirements.txt
-          # For tests purposes, we copy an existing .keras file in the folder api/resources
-          # We will delete it just after the tests
-          cp ./cats_dogs_other/train/steps/tests/test/input/model/final_model.keras ./cats_dogs_other/api/resources/final_model.keras 
-          python -m unittest
-          rm ./cats_dogs_other/api/resources/final_model.keras
-      - name: Install mlflow
+          python -m pip install --upgrade pip
+          pip install uv
+          uv sync --group training --group dev
+      - name: Launch unit tests
         run: |
-          pip install mlflow[extras]
-      - name: Configure Docker (Quay) & Kubectl (Openshift Sandbox)
+          uv run pytest tests/ci tests/training tests/api
+      - name: Resync only training group
+        run: |
+          uv sync --group training
+      - name: Configure docker and kubectl
         run: |
           docker login -u="${{vars.QUAY_ROBOT_USERNAME}}" -p="${{secrets.QUAY_ROBOT_TOKEN}}" quay.io
           kubectl config set-cluster openshift-cluster --server=${{vars.OPENSHIFT_SERVER}}
           kubectl config set-credentials openshift-credentials --token=${{secrets.OPENSHIFT_TOKEN}}
           kubectl config set-context openshift-context --cluster=openshift-cluster --user=openshift-credentials --namespace=${{vars.OPENSHIFT_USERNAME}}-dev
           kubectl config use openshift-context
-      - name: Wake up dailyclean and kto-mlflow
+      - name: Get Routes from Kubernetes and add them to env
+        run: |
+          DAILYCLEAN_ROUTE_URL=$(kubectl get route ${{env.DAILYCLEAN_ROUTE_NAME}} -o jsonpath='{.spec.host}')
+          MINIO_API_ROUTE_URL=$(kubectl get route ${{env.MINIO_API_ROUTE_NAME}} -o jsonpath='{.spec.host}')
+          MLFLOW_TRACKING_ROUTE_URL=$(kubectl get route ${{env.MLFLOW_TRACKING_ROUTE_NAME}} -o jsonpath='{.spec.host}')
+
+          echo "DAILYCLEAN_ROUTE_URL=https://$DAILYCLEAN_ROUTE_URL" >> $GITHUB_ENV
+          echo "MINIO_API_ROUTE_URL=https://$MINIO_API_ROUTE_URL" >> $GITHUB_ENV
+          echo "MLFLOW_TRACKING_ROUTE_URL=https://$MLFLOW_TRACKING_ROUTE_URL" >> $GITHUB_ENV
+      - name: Wake up dailyclean and mlflow
         run: |
           kubectl scale --replicas=1 deployment/dailyclean-api
           sleep 30
-          curl -X POST ${{vars.DAILYCLEAN_ROUTE}}/pods/start
+          curl -X POST $DAILYCLEAN_ROUTE_URL/pods/start
       - name: Build training image
         run: |
-          docker build -f cats_dogs_other/train/Dockerfile -t quay.io/gthomas59800/kto/train/cats-dogs-other-2023-2024:latest --build-arg MLFLOW_S3_ENDPOINT_URL=${{vars.MLFLOW_S3_ENDPOINT_URL}} --build-arg AWS_ACCESS_KEY_ID=${{vars.AWS_ACCESS_KEY_ID}} --build-arg AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} .
+          docker build -f k8s/experiment/Dockerfile -t ${{ env.EXPERIMENT_IMAGE_NAME }}:latest --build-arg MLFLOW_S3_ENDPOINT_URL=$MINIO_API_ROUTE_URL --build-arg AWS_ACCESS_KEY_ID=${{vars.AWS_ACCESS_KEY_ID}} --build-arg AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} .
       - name: Launch mlflow training in Openshift
         run: |
-          export KUBE_MLFLOW_TRACKING_URI="${{vars.MLFLOW_TRACKING_URI}}"
-          export MLFLOW_TRACKING_URI="${{vars.MLFLOW_TRACKING_URI}}"
-          export MLFLOW_S3_ENDPOINT_URL="${{vars.MLFLOW_S3_ENDPOINT_URL}}"
+          export KUBE_MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_ROUTE_URL
+          export MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_ROUTE_URL
+          export MLFLOW_S3_ENDPOINT_URL=$MINIO_API_ROUTE_URL
           export AWS_ACCESS_KEY_ID="${{vars.AWS_ACCESS_KEY_ID}}" 
           export AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}"
-          
-          cd cats_dogs_other/train
-          mlflow run . --experiment-name cats-dogs-other --backend kubernetes --backend-config kubernetes_config.json
 
-          echo "Get last finished mlflow run"
-          cd ../../.github/workflows
-          export MLFLOW_RUN_ID=$(python -c 'import search_mlflow; print(search_mlflow.search_last_run_by_experiment_name("cats-dogs-other"))') 
-          echo "MLFLOW_RUN_ID=$MLFLOW_RUN_ID" >> "$GITHUB_ENV"
+          uv run mlflow run ./src/titanic/training -P path=all_titanic.csv --experiment-name ${{ env.EXPERIMENT_NAME }} --backend kubernetes --backend-config ./k8s/experiment/kubernetes_config.json
+      - name: Download model artifact
+        run: |
+          export MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_ROUTE_URL
+          export MLFLOW_S3_ENDPOINT_URL=$MINIO_API_ROUTE_URL
+          export AWS_ACCESS_KEY_ID="${{vars.AWS_ACCESS_KEY_ID}}"
+          export AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}"
+          export ARTIFACT_URI=$(uv run -m titanic.ci.search_mlflow --experiment-name ${{ env.EXPERIMENT_NAME }})
+
+          echo "ARTIFACT_URI=$ARTIFACT_URI"
+          uv run mlflow artifacts download --artifact-uri $ARTIFACT_URI -d ./src/titanic/api/resources/
+
+          # could be : uv run mlflow artifacts download -r $MLFLOW_RUN_ID -a model.pkl -d ./src/titanic/api/resources/
       - name: Asleep kto-mlflow with dailyclean
         run: |
-          curl -X POST ${{vars.DAILYCLEAN_ROUTE}}/pods/stop
+          curl -X POST $DAILYCLEAN_ROUTE_URL/pods/stop
+
+          # TODO: Saisir la suite de cette pipeline. Devrait apparaître : 
+          # Install depencies, Launch unit tests, Resync only training group,
+          # Configure docker and kubectl, Get Routes from Kubernetes and add them to env
+          # Wake up dailyclean and mlflow, Build training image, Launch mlflow training in Openshift.
+          # Une fois l'API développée, et sécurisée intégrer : 
+          # Download model artifact, Build and push api image, Configure API manifest with OAuth2 domain
+          # Deploy api to Openshift with OAuth2 protection, Get OAuth2 token for integration test
+          # Test api with OAuth2 authentication, Asleep kto-mlflow with dailyclean
+
 ```
 
 Maintenant, ajoutez de quoi builder et pousser sur Quay votre image : 
 ```yaml
-      - name: Build and push API Docker image
-        run: |
-          docker build -t quay.io/gthomas59800/kto/mlops_python_2023_2024:latest --build-arg MLFLOW_RUN_ID=$MLFLOW_RUN_ID --build-arg MLFLOW_TRACKING_URI=${{vars.MLFLOW_TRACKING_URI}} --build-arg MLFLOW_S3_ENDPOINT_URL=${{vars.MLFLOW_S3_ENDPOINT_URL}} --build-arg AWS_ACCESS_KEY_ID=${{vars.AWS_ACCESS_KEY_ID}} --build-arg AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} .
-          docker push quay.io/gthomas59800/kto/mlops_python_2023_2024:latest
+- name: Build and push api image
+  run: |
+    docker build -f k8s/api/Dockerfile -t ${{ env.API_IMAGE_NAME }}:latest .
+    docker push ${{ env.API_IMAGE_NAME }}:latest
 ```
 
 Mettez ce bloc, juste avant l'extinction de kto-mlflow : 
 ```yaml
-name: Cats and dogs CI/CD
-on: 
+name: Train KTO Titanic model and Deploy API
+
+on:
   push:
     branches:
-      - step**
+      - main
+    paths:
+      - 'src/titanic/api/**'
+      - 'src/titanic/training/**'
+      - 'src/titanic/ci/**'
+      - '/tests/api/**'
+      - '/tests/training/**'
+      - '/tests/ci/**'
+      - 'k8s/experiment/**'
+      - 'k8s/api/**'
+      - '.github/workflows/ct-ci-cd.yaml'
+  pull_request:
+    branches:
+      - main
+
+env:
+  EXPERIMENT_NAME: kto-titanic
+  EXPERIMENT_IMAGE_NAME: quay.io/kto_gthomas/titanic/experiment
+  API_IMAGE_NAME: quay.io/kto_gthomas/titanic/api
+  API_ROUTE_NAME: titanic-api
+  DAILYCLEAN_ROUTE_NAME: dailyclean
+  MINIO_API_ROUTE_NAME: minio-api
+  MLFLOW_TRACKING_ROUTE_NAME: mlflow
 
 jobs:
   train:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@v3
         with:
-          python-version: 3.11
-      - name: Upgrade pip, install packages and run unittests
+          python-version: 3.13
+      - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          ./init_packages.sh
-          pip install -r ./cats_dogs_other/requirements.txt
-          pip install -r ./cats_dogs_other/label/requirements.txt
-          pip install -r ./cats_dogs_other/api/requirements.txt
-          # For tests purposes, we copy an existing .keras file in the folder api/resources
-          # We will delete it just after the tests
-          cp ./cats_dogs_other/train/steps/tests/test/input/model/final_model.keras ./cats_dogs_other/api/resources/final_model.keras 
-          python -m unittest
-          rm ./cats_dogs_other/api/resources/final_model.keras
-      - name: Install mlflow
+          python -m pip install --upgrade pip
+          pip install uv
+          uv sync --group training --group dev
+      - name: Launch unit tests
         run: |
-          pip install mlflow[extras]
-      - name: Configure Docker (Quay) & Kubectl (Openshift Sandbox)
+          uv run pytest tests/ci tests/training tests/api
+      - name: Resync only training group
+        run: |
+          uv sync --group training
+      - name: Configure docker and kubectl
         run: |
           docker login -u="${{vars.QUAY_ROBOT_USERNAME}}" -p="${{secrets.QUAY_ROBOT_TOKEN}}" quay.io
           kubectl config set-cluster openshift-cluster --server=${{vars.OPENSHIFT_SERVER}}
           kubectl config set-credentials openshift-credentials --token=${{secrets.OPENSHIFT_TOKEN}}
           kubectl config set-context openshift-context --cluster=openshift-cluster --user=openshift-credentials --namespace=${{vars.OPENSHIFT_USERNAME}}-dev
           kubectl config use openshift-context
-      - name: Wake up dailyclean and kto-mlflow
+      - name: Get Routes from Kubernetes and add them to env
+        run: |
+          DAILYCLEAN_ROUTE_URL=$(kubectl get route ${{env.DAILYCLEAN_ROUTE_NAME}} -o jsonpath='{.spec.host}')
+          MINIO_API_ROUTE_URL=$(kubectl get route ${{env.MINIO_API_ROUTE_NAME}} -o jsonpath='{.spec.host}')
+          MLFLOW_TRACKING_ROUTE_URL=$(kubectl get route ${{env.MLFLOW_TRACKING_ROUTE_NAME}} -o jsonpath='{.spec.host}')
+
+          echo "DAILYCLEAN_ROUTE_URL=https://$DAILYCLEAN_ROUTE_URL" >> $GITHUB_ENV
+          echo "MINIO_API_ROUTE_URL=https://$MINIO_API_ROUTE_URL" >> $GITHUB_ENV
+          echo "MLFLOW_TRACKING_ROUTE_URL=https://$MLFLOW_TRACKING_ROUTE_URL" >> $GITHUB_ENV
+      - name: Wake up dailyclean and mlflow
         run: |
           kubectl scale --replicas=1 deployment/dailyclean-api
           sleep 30
-          curl -X POST ${{vars.DAILYCLEAN_ROUTE}}/pods/start
+          curl -X POST $DAILYCLEAN_ROUTE_URL/pods/start
       - name: Build training image
         run: |
-          docker build -f cats_dogs_other/train/Dockerfile -t quay.io/gthomas59800/kto/train/cats-dogs-other-2023-2024:latest --build-arg MLFLOW_S3_ENDPOINT_URL=${{vars.MLFLOW_S3_ENDPOINT_URL}} --build-arg AWS_ACCESS_KEY_ID=${{vars.AWS_ACCESS_KEY_ID}} --build-arg AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} .
+          docker build -f k8s/experiment/Dockerfile -t ${{ env.EXPERIMENT_IMAGE_NAME }}:latest --build-arg MLFLOW_S3_ENDPOINT_URL=$MINIO_API_ROUTE_URL --build-arg AWS_ACCESS_KEY_ID=${{vars.AWS_ACCESS_KEY_ID}} --build-arg AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} .
       - name: Launch mlflow training in Openshift
         run: |
-          export KUBE_MLFLOW_TRACKING_URI="${{vars.MLFLOW_TRACKING_URI}}"
-          export MLFLOW_TRACKING_URI="${{vars.MLFLOW_TRACKING_URI}}"
-          export MLFLOW_S3_ENDPOINT_URL="${{vars.MLFLOW_S3_ENDPOINT_URL}}"
+          export KUBE_MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_ROUTE_URL
+          export MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_ROUTE_URL
+          export MLFLOW_S3_ENDPOINT_URL=$MINIO_API_ROUTE_URL
           export AWS_ACCESS_KEY_ID="${{vars.AWS_ACCESS_KEY_ID}}" 
           export AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}"
-          
-          cd cats_dogs_other/train
-          mlflow run . --experiment-name cats-dogs-other --backend kubernetes --backend-config kubernetes_config.json
 
-          echo "Get last finished mlflow run"
-          cd ../../.github/workflows
-          export MLFLOW_RUN_ID=$(python -c 'import search_mlflow; print(search_mlflow.search_last_run_by_experiment_name("cats-dogs-other"))') 
-          echo "MLFLOW_RUN_ID=$MLFLOW_RUN_ID" >> "$GITHUB_ENV"
-      - name: Build and push API Docker image
+          uv run mlflow run ./src/titanic/training -P path=all_titanic.csv --experiment-name ${{ env.EXPERIMENT_NAME }} --backend kubernetes --backend-config ./k8s/experiment/kubernetes_config.json
+      - name: Download model artifact
         run: |
-          docker build -t quay.io/gthomas59800/kto/mlops_python_2023_2024:latest --build-arg MLFLOW_RUN_ID=$MLFLOW_RUN_ID --build-arg MLFLOW_TRACKING_URI=${{vars.MLFLOW_TRACKING_URI}} --build-arg MLFLOW_S3_ENDPOINT_URL=${{vars.MLFLOW_S3_ENDPOINT_URL}} --build-arg AWS_ACCESS_KEY_ID=${{vars.AWS_ACCESS_KEY_ID}} --build-arg AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} .
-          docker push quay.io/gthomas59800/kto/mlops_python_2023_2024:latest
+          export MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_ROUTE_URL
+          export MLFLOW_S3_ENDPOINT_URL=$MINIO_API_ROUTE_URL
+          export AWS_ACCESS_KEY_ID="${{vars.AWS_ACCESS_KEY_ID}}"
+          export AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}"
+          export ARTIFACT_URI=$(uv run -m titanic.ci.search_mlflow --experiment-name ${{ env.EXPERIMENT_NAME }})
+
+          echo "ARTIFACT_URI=$ARTIFACT_URI"
+          uv run mlflow artifacts download --artifact-uri $ARTIFACT_URI -d ./src/titanic/api/resources/
+
+          # could be : uv run mlflow artifacts download -r $MLFLOW_RUN_ID -a model.pkl -d ./src/titanic/api/resources/
+      - name: Build and push api image
+        run: |
+          docker build -f k8s/api/Dockerfile -t ${{ env.API_IMAGE_NAME }}:latest .
+          docker push ${{ env.API_IMAGE_NAME }}:latest
       - name: Asleep kto-mlflow with dailyclean
         run: |
-          curl -X POST ${{vars.DAILYCLEAN_ROUTE}}/pods/stop
+          curl -X POST $DAILYCLEAN_ROUTE_URL/pods/stop
+
+          # TODO: Saisir la suite de cette pipeline. Devrait apparaître : 
+          # Install depencies, Launch unit tests, Resync only training group,
+          # Configure docker and kubectl, Get Routes from Kubernetes and add them to env
+          # Wake up dailyclean and mlflow, Build training image, Launch mlflow training in Openshift.
+          # Une fois l'API développée, et sécurisée intégrer : 
+          # Download model artifact, Build and push api image, Configure API manifest with OAuth2 domain
+          # Deploy api to Openshift with OAuth2 protection, Get OAuth2 token for integration test
+          # Test api with OAuth2 authentication, Asleep kto-mlflow with dailyclean
 
 ```
 
 Ce chapitre touche à sa fin ! Maintenant nous allons déployer cette image dans le Cloud !!!
 
-**Bravo ! Vous avez terminé cette partie. Veuillez me communiquer le lien vers votre image dans Quay.io par mail. (évaluations)**
+**Bravo ! Vous avez terminé cette partie.**
+
+> ⚠️ **Évaluation** : N'oubliez pas de commiter et pusher votre avancement. Cela devrait lancer votre github action.
+Vérifiez que votre image est bien construite et poussée sur Quay.io. Si c'est le cas, vous avez réussi ce chapitre !
+Veuillez me communiquer le lien vers votre image dans Quay.io par mail. 
+
+![363.png](img/363.png)
+![364.png](img/364.png)
