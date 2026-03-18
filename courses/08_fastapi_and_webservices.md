@@ -1029,12 +1029,17 @@ Ajoutez vos tests unitaires de votre api dans votre github action pour qu'ils so
 
 Dans votre fichier ct-ci-cd.yaml dans .github/workflows, modifiez la ligne 46 pour ajouter vos tests unitaires d'API :
 ```yaml
-      - name: Launch unit tests
-        run: |
-          uv run pytest tests/ci tests/training tests/api
+- name: Install dependencies
+  run: |
+    python -m pip install --upgrade pip
+    pip install uv
+    uv sync --group training --group dev --group api
+- name: Launch unit tests
+  run: |
+    uv run pytest tests/ci tests/training tests/api
 ```
 
-Votre fichier devrait ressembler à ceci : 
+Votre fichier devrait ressembler à ceci :
 ```yaml
 name: Train KTO Titanic model and Deploy API
 
@@ -1078,7 +1083,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install uv
-          uv sync --group training --group dev
+          uv sync --group training --group dev --group api
       - name: Launch unit tests
         run: |
           uv run pytest tests/ci tests/training tests/api

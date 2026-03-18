@@ -122,7 +122,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install uv
-          uv sync --group training --group dev
+          uv sync --group training --group dev --group api
       - name: Launch unit tests
         run: |
           uv run pytest tests/ci tests/training tests/api
