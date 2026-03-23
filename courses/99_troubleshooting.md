@@ -93,6 +93,19 @@ chmod -R 777 scripts
 ./scripts/install-mlflow.sh
 ```
 
+Si votre script n'existe plus, vous pouvez le recréer avec le contenu suivant : 
+
+```bash
+echo Install kto-mlflow
+oc apply -f k8s/mlflow/minio.yml
+oc apply -f k8s/mlflow/mysql.yml
+oc apply -f k8s/mlflow/mlflow.yml
+oc apply -f k8s/mlflow/dailyclean.yml
+oc label deployment dailyclean-api axa.com/dailyclean=false
+oc label statefulset mysql axa.com/dailyclean=true
+oc apply -f k8s/monitoring/jaeger.yaml
+```
+
 ![206.png](./img/206.png)
 
 - Vous pouvez maintenant continuer à travailler sur votre projet.
