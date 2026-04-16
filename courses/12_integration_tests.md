@@ -2,9 +2,10 @@
 
 Dans ce chapitre, nous allons ajouter des tests d'intégration à notre pipeline CI/CD pour vérifier que notre API fonctionne correctement une fois déployée sur OpenShift avec l'authentification OAuth2.
 
-Avant de commencer, afin que tout le monde parte du même point, vérifiez que vous n'avez aucune modification en cours sur votre working directory avec `git status`.
-Si c'est le cas, vérifiez que vous avez bien sauvegardé votre travail lors de l'étape précédente pour ne pas perdre votre travail.
-Sollicitez le professeur, car il est possible que votre contrôle continu en soit affecté.
+Avant de commencer, afin que tout le monde parte du même point, vérifiez que vous n'avez aucune modification en cours
+sur votre working directory avec `git status`.
+Si c'est le cas, veillez à pusher votre code sur git pour ne pas perdre votre travail.
+
 
 > ⚠️ **Attention** : En cas de doute, sollicitez le professeur, car il est possible que votre contrôle continu en soit affecté.
 

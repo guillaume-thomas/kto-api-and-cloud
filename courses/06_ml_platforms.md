@@ -205,7 +205,7 @@ ordinateur, complètement isolé, dans lequel nous allons ajouter notre code et 
 
 Allez ! Commençons ! :-)
 
-Identifiez le fichier `MLproject` dans le répertoire `./src/titanic/training/steps`, dont voici le contenu :
+Identifiez le fichier `MLproject` dans le répertoire `./src/titanic/training`, dont voici le contenu :
 ```yaml
 name: kto-titanic
 
