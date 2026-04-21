@@ -369,6 +369,33 @@ Remplacez les `TODO` de `chat_async` par le code suivant :
 Ignorez, voire, supprimez la méthode privée _call_mcp_tool qui était une ébauche d'implémentation d'appel MCP avant que 
 nous utilisions le client officiel.
 
+Des tests unitaires ne fonctionnent plus : test_agent_mcp_config_structure et test_agent_uses_environment_variables.
+
+Voici les corrections : 
+
+```python
+
+def test_agent_mcp_config_structure(agent):
+  """Test que la configuration MCP a la bonne structure."""
+  assert agent.mcp_connections is not None
+  assert "titanic" in agent.mcp_connections
+
+  titanic_config = agent.mcp_connections["titanic"]
+  assert titanic_config["url"] == "http://localhost:8000/mcp"
+  assert titanic_config["transport"] == "streamable_http"
+
+
+def test_agent_uses_environment_variables():
+  """Test que l'agent utilise correctement les variables d'environnement."""
+  os.environ["MCP_SERVER_HOST"] = "http://custom-host:9000"
+
+  agent = ChatbotAgent()
+
+  assert "http://custom-host:9000/mcp" in agent.mcp_connections["titanic"]["url"]
+
+  os.environ["MCP_SERVER_HOST"] = "http://localhost:8000"
+  
+```
 ### Résultat final attendu
 
 Votre fichier `agent.py` devrait désormais ressembler à ceci :
@@ -674,6 +701,16 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     mcp.run(transport="streamable-http", host=host, port=port, path="/mcp")
 ```
+
+## Création des repository Quay.io
+
+Avant d'aller plus loin, afin de pouvoir déployer le chatbot et le serveur MCP sur OpenShift, vous devez créer deux 
+repository sur Quay.io pour héberger les images Docker de ces services :
+- `titanic-chatbot` : pour l'image du chatbot Streamlit.
+- `titanic-mcp-server` : pour l'image du serveur MCP.
+
+Vous l'avez déjà fait maintes fois dans les chapitres précédents, je vous laisse vous reporter à ces parties.
+Attention, n'oubliez pas de configurer votre quay robot avec les permissions adéquates (Admin) sur ces deux nouveaux repository.
 
 ## Mettre à jour les github actions
 
@@ -1267,6 +1304,7 @@ chatbot = [
     "langchain>=0.3.0",
     "langchain-community>=0.3.0",
     "langchain-openai>=0.2.0",
+    "langchain-mcp-adapters>=0.2.1",
     "fastmcp>=0.4.0",
     "httpx>=0.28.0",
 ]
@@ -1316,6 +1354,7 @@ chatbot = [
     "langchain>=0.3.0",
     "langchain-community>=0.3.0",
     "langchain-openai>=0.2.0",
+    "langchain-mcp-adapters>=0.2.1",
     "fastmcp>=0.4.0",
     "httpx>=0.28.0",
     "traceloop-sdk>=0.39.0",

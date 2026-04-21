@@ -392,6 +392,7 @@ spec:
 déclencher la pipeline CI/CD.
 Vos tests d'intégration doivent avoir créé des métriques et vérifiez que vos métriques s'affichent bien dans Jaeger
 , prenez une capture d'écran et envoyez la par mail à votre professeur.
+Si vous ne voyez aucune trace, démarrez votre API (avec Dailyclean) et envoyez une requête d'inférence pour générer des traces avec Swagger (/docs).
 
 ![389.png](img/389.png)
 ![390.png](img/390.png)

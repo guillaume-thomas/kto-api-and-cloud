@@ -503,13 +503,13 @@ nouveau repository !!!
 
 ![362.png](img/362.png)
 
-Nous pourrions créer de nouveaux tags pour notre image :
+Nous allons maintenant créer notre image :
 
 ```bash
-docker tag <id of your image> quay.io/yourquayaccount/titanic/api:latest
+docker build -f ./k8s/api/Dockerfile -t quay.io/yourquayaccount/titanic/api:latest .
 ```
 
-Et maintenant, nous pourrions pousser avec :
+Et maintenant, nous allons la pousser avec :
 
 ```bash
 docker push quay.io/yourquayaccount/titanic/api:latest
